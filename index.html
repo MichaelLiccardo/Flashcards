@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0d11">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flashcards">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Flashcards SRS</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+:root {
+  --bg:        #0c0d11;
+  --bg2:       #13151c;
+  --bg3:       #1a1d27;
+  --bg4:       #222638;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.13);
+  --border3:   rgba(255,255,255,0.22);
+  --text:      #eceef5;
+  --text2:     #8b90a8;
+  --text3:     #454a62;
+  --again:     #ff5f5f;
+  --hard:      #ffaa44;
+  --good:      #44d494;
+  --easy:      #5b9cf6;
+  --again-dim: rgba(255,95,95,0.12);
+  --hard-dim:  rgba(255,170,68,0.12);
+  --good-dim:  rgba(68,212,148,0.12);
+  --easy-dim:  rgba(91,156,246,0.12);
+  --serif:  'Instrument Serif', Georgia, serif;
+  --sans:   'Instrument Sans', system-ui, sans-serif;
+  --radius: 18px;
+  --radius-sm: 10px;
+}
+ 
+html { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center;
+  overflow-x: hidden;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);
+  background-size: 40px 40px; pointer-events: none; z-index: 0;
+}
+ 
+.app {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 600px;
+  padding: 2rem 1.25rem 5rem;
+  display: flex; flex-direction: column; align-items: center;
+}
+ 
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.app-header {
+  width: 100%; display: flex;
+  align-items: center; justify-content: space-between;
+  margin-bottom: 2.5rem;
+}
+.app-title { font-family: var(--serif); font-size: 1.5rem; font-weight: normal; font-style: italic; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); transition: background 0.4s; flex-shrink: 0; }
+.sync-dot.syncing { background: var(--hard); animation: pulse 1s infinite; }
+.sync-dot.synced  { background: var(--good); }
+.sync-dot.error   { background: var(--again); }
+.sync-label { font-size: 0.65rem; color: var(--text3); }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+.user-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 99px; padding: 3px 10px 3px 4px;
+  font-size: 0.65rem; color: var(--text2);
+}
+.user-avatar {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--bg4); display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem; color: var(--text2); flex-shrink: 0;
+}
+.local-chip {
+  font-size: 0.62rem; color: var(--text3);
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 99px; padding: 3px 9px;
+}
+ 
+/* ── Shared components ───────────────────────────────────────────────────── */
+.btn {
+  padding: 9px 18px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border2); background: var(--bg2);
+  color: var(--text); font-size: 0.82rem; font-weight: 500;
+  cursor: pointer; font-family: var(--sans);
+  transition: background 0.15s, opacity 0.15s;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+.btn:hover { background: var(--bg3); }
+.btn:active { opacity: 0.75; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: var(--text); color: var(--bg); border-color: transparent; }
+.btn-primary:hover { opacity: 0.88; background: var(--text); }
+.btn-danger { background: var(--again-dim); color: var(--again); border-color: rgba(255,95,95,0.3); }
+.btn-danger:hover { background: rgba(255,95,95,0.22); }
+.btn-ghost { background: none; border-color: transparent; color: var(--text3); font-size: 0.75rem; padding: 6px 10px; }
+.btn-ghost:hover { background: var(--bg3); color: var(--text2); }
+.btn-sm { padding: 6px 13px; font-size: 0.76rem; }
+.btn-icon { padding: 7px 10px; }
+ 
+.field-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 5px; display: block; }
+.field-input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); padding: 10px 13px;
+  color: var(--text); font-size: 0.88rem; font-family: var(--sans);
+  outline: none; transition: border-color 0.2s; resize: vertical;
+}
+.field-input:focus { border-color: var(--border3); }
+.field-input::placeholder { color: var(--text3); }
+textarea.field-input { min-height: 80px; line-height: 1.5; }
+ 
+.spinner {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: currentColor;
+  animation: spin 0.6s linear infinite; flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+ 
+/* ── SCREEN: Loading ─────────────────────────────────────────────────────── */
+#screen-loading {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 60vh; gap: 1rem;
+}
+.loading-ring {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--border2); border-top-color: var(--text2);
+  animation: spin 0.8s linear infinite;
+}
+ 
+/* ── SCREEN: Auth ────────────────────────────────────────────────────────── */
+#screen-auth { display: none; width: 100%; flex-direction: column; align-items: center; gap: 1.5rem; }
+ 
+.auth-hero { text-align: center; }
+.auth-hero h2 { font-family: var(--serif); font-size: 2rem; font-weight: normal; font-style: italic; margin-bottom: 6px; }
+.auth-hero p  { font-size: 0.8rem; color: var(--text2); line-height: 1.6; }
+ 
+.auth-card {
+  width: 100%; background: var(--bg2);
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  overflow: hidden;
+}
+.auth-tabs {
+  display: flex; border-bottom: 1px solid var(--border);
+}
+.auth-tab {
+  flex: 1; padding: 12px 8px; background: none; border: none;
+  font-size: 0.78rem; font-weight: 500; color: var(--text3);
+  cursor: pointer; font-family: var(--sans);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.auth-tab:hover { color: var(--text2); }
+.auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
+ 
+.auth-form { padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; }
+.auth-field { display: flex; flex-direction: column; gap: 5px; }
+.auth-error {
+  font-size: 0.76rem; color: var(--again);
+  background: var(--again-dim); border-radius: var(--radius-sm);
+  padding: 9px 12px; display: none; line-height: 1.5;
+}
+.auth-error.show { display: block; }
+.auth-success {
+  font-size: 0.78rem; color: var(--good);
+  background: var(--good-dim); border-radius: var(--radius-sm);
+  padding: 12px; text-align: center; line-height: 1.6; display: none;
+}
+.auth-success.show { display: block; }
+.auth-hint { font-size: 0.72rem; color: var(--text3); text-align: center; line-height: 1.5; }
+ 
+.or-divider { font-size: 0.72rem; color: var(--text3); display: flex; align-items: center; gap: 10px; width: 100%; }
+.or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background: var(--border2); }
+ 
+/* Config panel (collapsible) */
+.config-panel {
+  width: 100%; background: var(--bg2);
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  overflow: hidden;
+}
+.config-panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem; cursor: pointer; user-select: none;
+}
+.config-panel-header h3 { font-family: var(--serif); font-weight: normal; font-style: italic; font-size: 1rem; color: var(--text2); }
+.config-toggle { font-size: 0.65rem; color: var(--text3); }
+.config-body { padding: 0 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 12px; }
+.config-body.collapsed { display: none; }
+.config-note { font-size: 0.72rem; color: var(--text2); line-height: 1.6; }
+.config-row { display: flex; flex-direction: column; gap: 5px; }
+.config-footer { display: flex; align-items: center; gap: 12px; }
+.config-status { font-size: 0.7rem; color: var(--text2); }
+.config-status.ok  { color: var(--good); }
+.config-status.err { color: var(--again); }
+ 
+/* ── SCREEN: Home ────────────────────────────────────────────────────────── */
+#screen-home { display: none; width: 100%; flex-direction: column; align-items: center; gap: 1.5rem; }
+ 
+.home-hero { text-align: center; }
+.home-hero h2 { font-family: var(--serif); font-size: 2.2rem; font-weight: normal; font-style: italic; line-height: 1.2; margin-bottom: 0.5rem; }
+.home-hero p  { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+ 
+.upload-zone {
+  width: 100%; border: 1.5px dashed var(--border2);
+  border-radius: var(--radius); padding: 2.5rem 2rem;
+  text-align: center; cursor: pointer; position: relative;
+  background: var(--bg2); transition: border-color 0.2s, background 0.2s;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--good); background: var(--good-dim); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+.upload-title { font-size: 0.95rem; font-weight: 500; margin-bottom: 4px; }
+.upload-sub   { font-size: 0.75rem; color: var(--text2); line-height: 1.5; }
+.upload-hint  { font-size: 0.65rem; color: var(--text3); margin-top: 8px; font-family: monospace; }
+.upload-error { font-size: 0.78rem; color: var(--again); text-align: center; }
+ 
+/* ── SCREEN: Deck ────────────────────────────────────────────────────────── */
+#screen-deck { display: none; width: 100%; flex-direction: column; align-items: center; }
+ 
+.deck-topbar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.queue-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.chip { font-size: 0.62rem; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border2); color: var(--text2); display: flex; align-items: center; gap: 4px; }
+.chip-dot { width: 5px; height: 5px; border-radius: 50%; }
+.chip-new  .chip-dot { background: var(--easy); }
+.chip-due  .chip-dot { background: var(--good); }
+.chip-over .chip-dot { background: var(--again); }
+ 
+.filter-row { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; min-height: 1px; }
+.fpill { padding: 3px 11px; border-radius: 99px; border: 1px solid var(--border2); background: var(--bg2); font-size: 0.65rem; cursor: pointer; color: var(--text2); transition: all 0.15s; font-family: var(--sans); }
+.fpill:hover { border-color: var(--border3); color: var(--text); }
+.fpill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+.fpill.diff-easy.active   { background: var(--easy);  border-color: var(--easy);  color: #000; }
+.fpill.diff-medium.active { background: var(--hard);  border-color: var(--hard);  color: #000; }
+.fpill.diff-hard.active   { background: var(--again); border-color: var(--again); color: #fff; }
+ 
+.prog-wrap { width: 100%; margin-bottom: 1.5rem; }
+.prog-track { height: 3px; background: var(--bg4); border-radius: 99px; overflow: hidden; display: flex; }
+.prog-seg { height: 100%; transition: width 0.4s ease; }
+.ps-again { background: var(--again); } .ps-hard { background: var(--hard); }
+.ps-good  { background: var(--good); }  .ps-easy { background: var(--easy); }
+.prog-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text3); margin-top: 5px; }
+ 
+.scene { width: 100%; height: 310px; perspective: 1400px; cursor: pointer; margin-bottom: 1.5rem; }
+.card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.52s cubic-bezier(0.4,0,0.2,1); }
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 2.5rem 3rem; text-align: center; gap: 0.8rem;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.35);
+}
+.card-face::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); border-radius:var(--radius) var(--radius) 0 0; }
+.card-back { background: var(--bg3); transform: rotateY(180deg); }
+.card-tag { font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3); }
+.card-text { font-family: var(--serif); font-size: 1.3rem; line-height: 1.6; color: var(--text); font-style: italic; }
+.card-tap { font-size: 0.65rem; color: var(--text3); }
+.card-badges { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+.cbadge { font-size: 0.58rem; padding: 2px 7px; border-radius: 99px; border: 1px solid var(--border2); color: var(--text3); }
+.cbadge.easy   { color: var(--easy);  border-color: var(--easy); }
+.cbadge.medium { color: var(--hard);  border-color: var(--hard); }
+.cbadge.hard   { color: var(--again); border-color: var(--again); }
+.card-interval { font-size: 0.62rem; color: var(--text3); margin-top: 2px; }
+.card-ribbon { position:absolute; top:14px; right:14px; font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:99px; border:1px solid var(--border2); color:var(--text3); }
+.card-ribbon.ribbon-new { color:var(--easy);  border-color:var(--easy); }
+.card-ribbon.ribbon-due { color:var(--good);  border-color:var(--good); }
+.card-edit-btn { position:absolute; top:14px; left:14px; font-size:0.6rem; padding:3px 8px; border-radius:99px; border:1px solid var(--border2); color:var(--text3); background:none; cursor:pointer; font-family:var(--sans); transition:border-color 0.15s,color 0.15s; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
+.card-edit-btn:hover { border-color:var(--border3); color:var(--text2); }
+ 
+.rating-area { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+.rating-area.show { display: flex; }
+.rating-label { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
+.rating-btns { display: flex; gap: 8px; width: 100%; }
+.r-btn { flex: 1; padding: 13px 6px; border-radius: var(--radius-sm); border: 1px solid transparent; font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: var(--sans); display: flex; flex-direction: column; align-items: center; gap: 3px; transition: transform 0.1s; }
+.r-btn:active { transform: scale(0.95); }
+.r-btn .r-next { font-size: 0.58rem; opacity: 0.75; font-weight: 400; }
+.r-btn .r-key  { font-size: 0.55rem; opacity: 0.4; font-weight: 400; }
+.rb-again { background: var(--again-dim); color: var(--again); border-color: rgba(255,95,95,0.3); }
+.rb-hard  { background: var(--hard-dim);  color: var(--hard);  border-color: rgba(255,170,68,0.3); }
+.rb-good  { background: var(--good-dim);  color: var(--good);  border-color: rgba(68,212,148,0.3); }
+.rb-easy  { background: var(--easy-dim);  color: var(--easy);  border-color: rgba(91,156,246,0.3); }
+ 
+.nav-bar { display: flex; align-items: center; gap: 8px; }
+.nav-bar.hide { display: none; }
+.card-counter { font-size: 0.68rem; color: var(--text3); min-width: 56px; text-align: center; }
+.no-cards-notice { display: none; font-size: 0.82rem; color: var(--text3); text-align: center; padding: 2rem 1rem; width: 100%; }
+ 
+/* ── SCREEN: Done ────────────────────────────────────────────────────────── */
+#screen-done { display: none; flex-direction: column; align-items: center; gap: 1.25rem; text-align: center; width: 100%; background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border); padding: 3rem 2rem; }
+#screen-done h2 { font-family: var(--serif); font-size: 2rem; font-weight: normal; font-style: italic; }
+#screen-done p  { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+.done-grid { display: flex; gap: 1.5rem; }
+.done-stat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.done-val  { font-family: var(--serif); font-size: 2.2rem; font-style: italic; }
+.dv-again { color: var(--again); } .dv-hard { color: var(--hard); }
+.dv-good  { color: var(--good); }  .dv-easy { color: var(--easy); }
+.done-lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); }
+ 
+/* ── SCREEN: Manage ──────────────────────────────────────────────────────── */
+#screen-manage { display: none; width: 100%; flex-direction: column; gap: 1.25rem; }
+.manage-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.card-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.card-list-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: flex-start; gap: 12px; transition: border-color 0.15s; }
+.card-list-item:hover { border-color: var(--border2); }
+.card-list-content { flex: 1; min-width: 0; }
+.card-list-q { font-size: 0.88rem; color: var(--text); margin-bottom: 4px; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-list-a { font-size: 0.75rem; color: var(--text2); line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-list-meta { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+.card-list-srs  { font-size: 0.6rem; color: var(--text3); }
+.card-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 0.85rem; line-height: 1.7; }
+ 
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 1.25rem; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border2); padding: 2rem; width: 100%; max-width: 520px; display: flex; flex-direction: column; gap: 1.25rem; max-height: 90vh; overflow-y: auto; animation: modalin 0.2s ease; }
+@keyframes modalin { from{transform:translateY(12px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-header { display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-family: var(--serif); font-weight: normal; font-style: italic; font-size: 1.3rem; }
+.modal-close { background: none; border: none; color: var(--text3); font-size: 1.2rem; cursor: pointer; padding: 2px 6px; }
+.modal-close:hover { color: var(--text); }
+.modal-field { display: flex; flex-direction: column; gap: 5px; }
+.modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; }
+.modal-footer-right { display: flex; gap: 8px; }
+ 
+/* ── Bottom nav ──────────────────────────────────────────────────────────── */
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--border); display: flex; justify-content: center; padding: 0.6rem 1rem env(safe-area-inset-bottom); z-index: 50; gap: 2rem; }
+.nav-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.6rem; color: var(--text3); cursor: pointer; background: none; border: none; font-family: var(--sans); padding: 6px 16px; border-radius: var(--radius-sm); transition: color 0.15s; }
+.nav-tab .tab-icon { font-size: 1.15rem; }
+.nav-tab:hover { color: var(--text2); }
+.nav-tab.active { color: var(--text); }
+ 
+/* ── Install banner ──────────────────────────────────────────────────────── */
+#install-banner { display: none; position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 1rem 1.25rem; width: calc(100% - 2.5rem); max-width: 520px; z-index: 50; box-shadow: 0 8px 40px rgba(0,0,0,0.5); flex-direction: column; gap: 10px; animation: slideup 0.3s ease; }
+@keyframes slideup { from{transform:translateX(-50%) translateY(16px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+.banner-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.banner-text h4 { font-size: 0.88rem; font-weight: 600; margin-bottom: 3px; }
+.banner-text p  { font-size: 0.72rem; color: var(--text2); }
+.banner-btns { display: flex; gap: 8px; flex-shrink: 0; }
+ 
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+#toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg3); border: 1px solid var(--border2); border-radius: 99px; padding: 8px 18px; font-size: 0.75rem; color: var(--text2); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; white-space: nowrap; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+ 
+.back-link { font-size: 0.68rem; color: var(--text3); background: none; border: none; cursor: pointer; text-decoration: underline; font-family: var(--sans); padding: 0; margin-top: 4px; }
+.back-link:hover { color: var(--text2); }
+</style>
+</head>
+<body>
+ 
+<div class="app">
+  <!-- ── Header (always visible) ───────────────────────────────────────── -->
+  <header class="app-header">
+    <span class="app-title">Flashcards</span>
+    <div class="header-right" id="header-right">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span class="sync-label" id="sync-label">—</span>
+    </div>
+  </header>
+ 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Loading                                                     -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-loading">
+    <div class="loading-ring"></div>
+  </div>
+ 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Auth                                                        -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-auth">
+    <div class="auth-hero">
+      <h2>Sign in to continue</h2>
+      <p>Your flashcards are private and encrypted.<br>Sign in to access your decks on any device.</p>
+    </div>
+ 
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-signin"  onclick="setAuthMode('signin')">Sign in</button>
+        <button class="auth-tab"        id="tab-signup"  onclick="setAuthMode('signup')">Create account</button>
+      </div>
+      <div class="auth-form" id="auth-form">
+        <div class="auth-field">
+          <label class="field-label">Email</label>
+          <input class="field-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="auth-field" id="password-field">
+          <label class="field-label">Password</label>
+          <input class="field-input" id="auth-password" type="password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="auth-error" id="auth-error"></div>
+        <div class="auth-success" id="auth-success"></div>
+        <button class="btn btn-primary" id="auth-submit" onclick="handleAuth()">
+          <span id="auth-btn-label">Sign in</span>
+          <span class="spinner" id="auth-spinner" style="display:none"></span>
+        </button>
+        <p class="auth-hint" id="auth-hint" style="display:none"></p>
+      </div>
+    </div>
+ 
+    <div class="or-divider">or</div>
+    <button class="btn" style="width:100%" onclick="continueLocally()">
+      Continue without account <span style="font-size:0.7rem;opacity:0.6">(local only, not private)</span>
+    </button>
+  </div>
+ 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Home                                                        -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-home">
+    <div class="home-hero">
+      <h2>Ready to study?</h2>
+      <p>Load a JSON deck or create a new one from scratch.</p>
+    </div>
+ 
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" accept=".json" id="file-input">
+      <span class="upload-icon">{ }</span>
+      <div class="upload-title">Load a JSON deck</div>
+      <div class="upload-sub">Drop your file here or click to browse</div>
+      <div class="upload-hint">[ { "question": "…", "answer": "…", "category": "…", "difficulty": "easy|medium|hard" } ]</div>
+    </div>
+ 
+    <div class="or-divider">or</div>
+    <button class="btn btn-primary" style="width:100%" onclick="newDeck()">＋ Create a new deck</button>
+    <p class="upload-error" id="upload-error" style="display:none"></p>
+  </div>
+ 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Study                                                       -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-deck">
+    <div class="deck-topbar">
+      <div class="queue-chips">
+        <div class="chip chip-new"><span class="chip-dot"></span><span id="cnt-new">0</span> new</div>
+        <div class="chip chip-due"><span class="chip-dot"></span><span id="cnt-due">0</span> due</div>
+        <div class="chip chip-over"><span class="chip-dot"></span><span id="cnt-over">0</span> overdue</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="showScreen('home')">✕ Close</button>
+    </div>
+ 
+    <div class="filter-row" id="filter-row"></div>
+    <div class="no-cards-notice" id="no-cards">No cards due with current filters.</div>
+ 
+    <div class="prog-wrap">
+      <div class="prog-track">
+        <div class="prog-seg ps-again" id="ps-again" style="width:0%"></div>
+        <div class="prog-seg ps-hard"  id="ps-hard"  style="width:0%"></div>
+        <div class="prog-seg ps-good"  id="ps-good"  style="width:0%"></div>
+        <div class="prog-seg ps-easy"  id="ps-easy"  style="width:0%"></div>
+      </div>
+      <div class="prog-labels"><span id="prog-left">—</span><span id="prog-done">—</span></div>
+    </div>
+ 
+    <div class="scene" id="card-scene" role="button" tabindex="0" aria-label="Flashcard. Press Enter or Space to reveal the answer." onclick="handleCardClick()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();handleCardClick();}">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <button class="card-edit-btn" onclick="editCurrentCard(event)">✎ edit</button>
+          <span class="card-ribbon" id="ribbon-f"></span>
+          <span class="card-tag">Question</span>
+          <p class="card-text" id="card-q"></p>
+          <div class="card-badges" id="badges-f"></div>
+          <span class="card-tap">click to reveal</span>
+        </div>
+        <div class="card-face card-back">
+          <span class="card-ribbon" id="ribbon-b"></span>
+          <span class="card-tag">Answer</span>
+          <p class="card-text" id="card-a"></p>
+          <div class="card-badges" id="badges-b"></div>
+          <span class="card-interval" id="card-interval"></span>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="rating-area" id="rating-area">
+      <span class="rating-label">How well did you know this?</span>
+      <div class="rating-btns">
+        <button class="r-btn rb-again" onclick="rate('again')">Again<span class="r-next" id="ri-again"></span><span class="r-key">[1]</span></button>
+        <button class="r-btn rb-hard"  onclick="rate('hard')">Hard<span class="r-next" id="ri-hard"></span><span class="r-key">[2]</span></button>
+        <button class="r-btn rb-good"  onclick="rate('good')">Good<span class="r-next" id="ri-good"></span><span class="r-key">[3]</span></button>
+        <button class="r-btn rb-easy"  onclick="rate('easy')">Easy<span class="r-next" id="ri-easy"></span><span class="r-key">[4]</span></button>
+      </div>
+    </div>
+ 
+    <div class="nav-bar" id="nav-bar">
+      <button class="btn btn-sm" onclick="skipCard()">Skip</button>
+      <span class="card-counter" id="card-counter">—</span>
+      <button class="btn btn-primary btn-sm" onclick="revealCard()">Reveal Answer</button>
+    </div>
+    <button class="back-link" onclick="showScreen('home')" style="margin-top:12px">Load a different deck</button>
+  </div>
+ 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Done                                                        -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-done">
+    <h2>Session complete</h2>
+    <p>All due cards reviewed.<br>Come back tomorrow to keep building your memory.</p>
+    <div class="done-grid">
+      <div class="done-stat"><span class="done-val dv-again" id="dn-again">0</span><span class="done-lbl">Again</span></div>
+      <div class="done-stat"><span class="done-val dv-hard"  id="dn-hard">0</span><span class="done-lbl">Hard</span></div>
+      <div class="done-stat"><span class="done-val dv-good"  id="dn-good">0</span><span class="done-lbl">Good</span></div>
+      <div class="done-stat"><span class="done-val dv-easy"  id="dn-easy">0</span><span class="done-lbl">Easy</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="restartSession()">Review again</button>
+    <button class="back-link" onclick="showScreen('home')">Load a different deck</button>
+  </div>
+ 
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Manage                                                      -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-manage">
+    <div class="manage-toolbar">
+      <input class="field-input" id="search-input" type="search" placeholder="Search cards…" oninput="renderCardList()" style="flex:1;min-width:140px">
+      <button class="btn btn-primary btn-sm" onclick="openCardEditor(null)">＋ Add card</button>
+      <button class="btn btn-sm" onclick="exportDeck()" title="Download as JSON">⬇ Export</button>
+    </div>
+    <div style="font-size:0.72rem;color:var(--text3);width:100%;display:flex;justify-content:space-between">
+      <span id="manage-count">0 cards</span>
+      <span id="manage-deck-name" style="font-family:monospace"></span>
+    </div>
+    <div class="card-list" id="card-list"></div>
+  </div>
+</div><!-- /app -->
+ 
+<!-- Bottom nav -->
+<nav class="bottom-nav" id="bottom-nav" style="display:none">
+  <button class="nav-tab" id="tab-study"  onclick="navTo('study')"><span class="tab-icon">🃏</span>Study</button>
+  <button class="nav-tab" id="tab-manage" onclick="navTo('manage')"><span class="tab-icon">✏️</span>Manage</button>
+</nav>
+ 
+<!-- Card editor modal -->
+<div class="modal-overlay" id="editor-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="editor-title">Add card</span>
+      <button class="modal-close" onclick="closeCardEditor()">✕</button>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Question</label>
+      <textarea class="field-input" id="ed-question" placeholder="Enter the question…" rows="3"></textarea>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Answer</label>
+      <textarea class="field-input" id="ed-answer" placeholder="Enter the answer…" rows="3"></textarea>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="modal-field" style="flex:1">
+        <label class="field-label">Category <span style="opacity:.5">(optional)</span></label>
+        <input class="field-input" id="ed-category" placeholder="e.g. Biology">
+      </div>
+      <div class="modal-field" style="flex:1">
+        <label class="field-label">Difficulty <span style="opacity:.5">(optional)</span></label>
+        <select class="field-input" id="ed-difficulty">
+          <option value="">— none —</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="ed-delete-btn" onclick="confirmDeleteCard()" style="display:none">Delete card</button>
+      <div class="modal-footer-right">
+        <button class="btn btn-sm" onclick="closeCardEditor()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveCard()">Save card</button>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- Confirm delete modal -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-header">
+      <span class="modal-title">Delete card?</span>
+      <button class="modal-close" onclick="closeConfirm()">✕</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text2);line-height:1.6">This permanently removes the card and its SRS progress. Cannot be undone.</p>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-right">
+        <button class="btn btn-sm" onclick="closeConfirm()">Cancel</button>
+        <button class="btn btn-danger btn-sm" onclick="doDeleteCard()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- Install banner -->
+<div id="install-banner">
+  <div class="banner-row">
+    <div class="banner-text"><h4>Install Flashcards</h4><p>Add to home screen for offline access</p></div>
+    <div class="banner-btns">
+      <button class="btn btn-sm" onclick="dismissInstall()">Not now</button>
+      <button class="btn btn-primary btn-sm" onclick="installApp()">Install</button>
+    </div>
+  </div>
+</div>
+ 
+<div id="toast"></div>
+ 
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+// CONFIG — your Supabase credentials (safe to be public; RLS protects the data)
+// ════════════════════════════════════════════════════════════════════════════
+//
+//  ┌──────────────────────────────────────────────────────────────────────┐
+//  │  PASTE YOUR TWO VALUES BELOW.                                          │
+//  │  Find them in your Supabase dashboard → Settings → API.                │
+//  └──────────────────────────────────────────────────────────────────────┘
+const SUPABASE_URL = 'https://ehigksjmazhgfburhlzp.supabase.co';   // e.g. https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoaWdrc2ptYXpoZ2ZidXJobHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzk1MDEsImV4cCI6MjA5NTY1NTUwMX0.QUdtvmT1v1Anl_seeqfbZZxme3LgNUuUEPa2SbZdZR8'; // e.g. eyJhbGciOiJIUzI1NiI...
+ 
+function getConfig() {
+  const url = SUPABASE_URL.replace(/\/$/, '');
+  // Treat the unfilled placeholders as "not configured".
+  if (url.startsWith('PASTE_') || SUPABASE_ANON_KEY.startsWith('PASTE_')) return {};
+  return { url, key: SUPABASE_ANON_KEY };
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// SUPABASE CLIENT
+// ════════════════════════════════════════════════════════════════════════════
+let sb=null, currentUser=null, localMode=false, authListenerAttached=false;
+ 
+function initSupabaseClient() {
+  const cfg=getConfig();
+  if(cfg.url&&cfg.key&&typeof supabase!=='undefined') sb=supabase.createClient(cfg.url,cfg.key);
+}
+ 
+function attachAuthListener() {
+  if(!sb||authListenerAttached) return;
+  authListenerAttached=true;
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==='SIGNED_IN'&&session){ if(!currentUser){ currentUser=session.user; onSignedIn(currentUser); } }
+    else if(event==='SIGNED_OUT'){
+      currentUser=null; localMode=false;
+      allCards=[]; srsData={}; deckName=''; queue=[]; qIdx=0;
+      document.getElementById('bottom-nav').style.display='none';
+      updateHeaderUI(); showScreen('auth');
+    }
+  });
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// AUTH UI
+// ════════════════════════════════════════════════════════════════════════════
+let authMode='signin';
+function setAuthMode(mode) {
+  authMode=mode;
+  ['signin','signup'].forEach(m=>document.getElementById('tab-'+m).classList.toggle('active',m===mode));
+  const pwField=document.getElementById('password-field');
+  const btnLabel=document.getElementById('auth-btn-label');
+  const hint=document.getElementById('auth-hint');
+  document.getElementById('auth-error').classList.remove('show');
+  document.getElementById('auth-success').classList.remove('show');
+  hint.style.display='none';
+  if(mode==='signin'){pwField.style.display='flex';btnLabel.textContent='Sign in';document.getElementById('auth-password').setAttribute('autocomplete','current-password');}
+  if(mode==='signup'){pwField.style.display='flex';btnLabel.textContent='Create account';document.getElementById('auth-password').setAttribute('autocomplete','new-password');}
+}
+ 
+async function handleAuth() {
+  if(!sb){showAuthError('App is not configured with Supabase credentials yet.');return;}
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value;
+  if(!email){showAuthError('Please enter your email address.');return;}
+  const btn=document.getElementById('auth-submit');
+  const spinner=document.getElementById('auth-spinner');
+  const label=document.getElementById('auth-btn-label');
+  const busy=on=>{btn.disabled=on;spinner.style.display=on?'inline-block':'none';label.style.opacity=on?'0.4':'1';};
+  busy(true);
+  document.getElementById('auth-error').classList.remove('show');
+  try {
+    if(authMode==='signin'){
+      if(!password){showAuthError('Please enter your password.');return;}
+      const{error}=await sb.auth.signInWithPassword({email,password}); if(error)throw error;
+    } else if(authMode==='signup'){
+      if(!password||password.length<6){showAuthError('Password must be at least 6 characters.');return;}
+      const{error}=await sb.auth.signUp({email,password}); if(error)throw error;
+      showAuthSuccess('Account created! Check your email for a confirmation link, then come back to sign in.');
+    }
+  } catch(err){ showAuthError(friendlyAuthError(err.message||String(err))); }
+  finally{ busy(false); }
+}
+ 
+function friendlyAuthError(msg) {
+  if(msg.includes('Invalid login credentials')) return 'Wrong email or password. Please try again.';
+  if(msg.includes('Email not confirmed'))  return 'Please confirm your email address first. Check your inbox.';
+  if(msg.includes('already registered'))    return 'An account with this email already exists. Try signing in instead.';
+  if(msg.includes('Password should be'))    return 'Password must be at least 6 characters.';
+  if(msg.includes('Unable to validate'))    return 'Invalid email address.';
+  if(msg.toLowerCase().includes('rate limit')) return 'Too many attempts. Please wait a moment and try again.';
+  return msg;
+}
+function showAuthError(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.classList.add('show');document.getElementById('auth-success').classList.remove('show');}
+function showAuthSuccess(msg){const el=document.getElementById('auth-success');el.textContent=msg;el.classList.add('show');document.getElementById('auth-error').classList.remove('show');}
+ 
+function continueLocally() {
+  localMode=true; currentUser=null;
+  updateHeaderUI(); lsLoadActive();
+  document.getElementById('bottom-nav').style.display='flex';
+  if(allCards.length) navTo('study'); else showScreen('home');
+}
+ 
+async function signOut() {
+  if(sb) await sb.auth.signOut();
+  currentUser=null; localMode=false;
+  allCards=[]; srsData={}; deckName=''; queue=[]; qIdx=0;
+  document.getElementById('bottom-nav').style.display='none';
+  updateHeaderUI(); showScreen('auth'); toast('Signed out');
+}
+ 
+function onSignedIn(user) {
+  currentUser=user; localMode=false;
+  updateHeaderUI(); lsLoadActive();
+  document.getElementById('bottom-nav').style.display='flex';
+  if(allCards.length){
+    navTo('study');
+    syncLoad(deckName).then(()=>{buildFilters();buildQueue();renderCard();updateTopBar();renderCardList();});
+  } else {
+    showScreen('home');
+  }
+}
+ 
+function updateHeaderUI() {
+  const hr=document.getElementById('header-right');
+  if(currentUser){
+    const email=currentUser.email||'';
+    const initial=escHtml((email[0]||'?').toUpperCase());
+    const shown=escHtml(email.length>22?email.slice(0,20)+'…':email);
+    hr.innerHTML=`<span class="sync-dot synced" id="sync-dot"></span><span class="sync-label" id="sync-label">synced</span><div class="user-chip"><div class="user-avatar">${initial}</div><span>${shown}</span></div><button class="btn btn-ghost btn-sm" onclick="signOut()">Sign out</button>`;
+  } else if(localMode){
+    hr.innerHTML=`<span class="local-chip">local only</span>`;
+  } else {
+    hr.innerHTML=`<span class="sync-dot" id="sync-dot"></span><span class="sync-label" id="sync-label">—</span>`;
+  }
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// SM-2
+// ════════════════════════════════════════════════════════════════════════════
+const DEFAULT_EASE=2.5, MIN_EASE=1.3;
+function sm2(card,rating) {
+  const q={again:0,hard:3,good:4,easy:5}[rating];
+  let{interval=0,ease=DEFAULT_EASE,reps=0}=card;
+  if(q<3){reps=0;interval=1;}
+  else{if(reps===0)interval=1;else if(reps===1)interval=6;else interval=Math.round(interval*ease);reps++;}
+  ease=Math.max(MIN_EASE,ease+0.1-(5-q)*(0.08+(5-q)*0.02));
+  return{interval,ease,reps,due:Date.now()+interval*864e5};
+}
+function previewIntervals(card){return Object.fromEntries(['again','hard','good','easy'].map(r=>[r,sm2(card,r).interval]));}
+function fmtDays(d){if(!d||d<1)return'<1d';if(d===1)return'1d';if(d<30)return d+'d';if(d<365)return Math.round(d/30)+'mo';return(d/365).toFixed(1)+'yr';}
+function cardKey(q){try{return btoa(encodeURIComponent(q)).slice(0,40);}catch(e){return q.slice(0,40);}}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════════════════
+let allCards=[], srsData={}, queue=[], qIdx=0, isFlipped=false;
+let sessionStats={again:0,hard:0,good:0,easy:0};
+let deckName='', activeCats=new Set(), activeDiffs=new Set();
+let editorCardKey=null, pendingSync=false;
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// LOCALSTORAGE — keyed PER DECK so multiple decks coexist (matches DB schema)
+// ════════════════════════════════════════════════════════════════════════════
+const LS_ACTIVE='fc_active';
+function deckLSKey(name){return 'fc_deck_'+encodeURIComponent(name);}
+ 
+function lsSaveAll() {
+  if(!deckName) return;
+  try {
+    localStorage.setItem(deckLSKey(deckName), JSON.stringify({cards:allCards, srs:srsData, updatedAt:Date.now()}));
+    localStorage.setItem(LS_ACTIVE, deckName);
+  } catch(e){}
+}
+function lsReadDeck(name) {
+  try { const raw=localStorage.getItem(deckLSKey(name)); return raw?JSON.parse(raw):null; } catch(e){ return null; }
+}
+// Load a deck's cards+srs into memory. Returns true if found.
+function lsLoadDeck(name) {
+  const d=lsReadDeck(name);
+  if(!d) return false;
+  if(d.cards) allCards=d.cards;
+  if(d.srs)   srsData=d.srs;
+  deckName=name;
+  return true;
+}
+// Restore the most-recently-active deck (used on app boot / sign-in).
+function lsLoadActive() {
+  try { const active=localStorage.getItem(LS_ACTIVE); if(active) return lsLoadDeck(active); } catch(e){}
+  return false;
+}
+// One-time migration from the old single-deck keys.
+function migrateOldLS() {
+  try {
+    const oldCards=localStorage.getItem('fc_cards');
+    if(!oldCards) return;
+    const cards=JSON.parse(oldCards);
+    const srs=JSON.parse(localStorage.getItem('fc_srs')||'{}');
+    const name=localStorage.getItem('fc_name')||'My Deck';
+    localStorage.setItem(deckLSKey(name), JSON.stringify({cards, srs, updatedAt:Date.now()}));
+    localStorage.setItem(LS_ACTIVE, name);
+    localStorage.removeItem('fc_cards'); localStorage.removeItem('fc_srs'); localStorage.removeItem('fc_name');
+  } catch(e){}
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// SUPABASE SYNC
+// ════════════════════════════════════════════════════════════════════════════
+function setSyncStatus(state,msg){
+  const dot=document.getElementById('sync-dot'), lbl=document.getElementById('sync-label');
+  if(dot)dot.className='sync-dot '+state;
+  if(lbl)lbl.textContent=msg||state;
+}
+ 
+// Last-write-wins by timestamp: whichever of local/remote was saved later wins.
+async function syncLoad(name) {
+  if(!sb||!currentUser) return false;
+  setSyncStatus('syncing','syncing…');
+  try {
+    const{data,error}=await sb.from('flashcard_progress')
+      .select('srs_data,cards_data,updated_at').eq('deck_name',name).maybeSingle();
+    if(error||!data){setSyncStatus('synced','synced');return false;}
+    const remoteTime=data.updated_at?new Date(data.updated_at).getTime():0;
+    const local=lsReadDeck(name);
+    const localTime=local?(local.updatedAt||0):0;
+    if(remoteTime>=localTime){
+      if(data.srs_data) srsData=data.srs_data;
+      if(data.cards_data&&data.cards_data.length>0) allCards=data.cards_data;
+      lsSaveAll();
+    } else {
+      scheduleSyncSave(); // local is newer — push it up
+    }
+    setSyncStatus('synced','synced');
+    return true;
+  } catch(e){ setSyncStatus('error','sync failed'); return false; }
+}
+ 
+let syncTimer=null;
+function scheduleSyncSave(){clearTimeout(syncTimer);syncTimer=setTimeout(syncSave,1500);}
+async function syncSave() {
+  if(!sb||!currentUser){pendingSync=!localMode;return;}
+  setSyncStatus('syncing','syncing…'); pendingSync=false;
+  try {
+    const{error}=await sb.from('flashcard_progress').upsert({
+      user_id:currentUser.id, deck_name:deckName,
+      srs_data:srsData, cards_data:allCards, updated_at:new Date().toISOString()
+    },{onConflict:'user_id,deck_name'});
+    if(error)throw error;
+    setSyncStatus('synced','synced');
+  } catch(e){ setSyncStatus('error','sync failed'); pendingSync=true; }
+}
+window.addEventListener('online',()=>{ if(currentUser) setSyncStatus('synced','synced'); if(pendingSync&&!localMode)syncSave(); });
+window.addEventListener('offline',()=>setSyncStatus('offline','offline'));
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// JSON PARSING
+// ════════════════════════════════════════════════════════════════════════════
+function parseJSON(text) {
+  const data=JSON.parse(text);
+  if(!Array.isArray(data))throw new Error('JSON must be an array of card objects.');
+  const valid=['easy','medium','hard'];
+  const cards=data.filter(d=>d&&d.question&&d.answer).map(d=>{
+    let diff=d.difficulty?String(d.difficulty).trim().toLowerCase():null;
+    if(diff&&!valid.includes(diff)) diff=null;
+    return {q:String(d.question).trim(), a:String(d.answer).trim(),
+      category:d.category?String(d.category).trim():null, difficulty:diff,
+      key:cardKey(String(d.question).trim())};
+  });
+  if(!cards.length)throw new Error('No valid cards found. Each card needs "question" and "answer".');
+  return cards;
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// DECK LOADING
+// ════════════════════════════════════════════════════════════════════════════
+async function loadDeck(cards,name) {
+  // The uploaded file is authoritative for card CONTENT; we keep any saved SRS
+  // progress (matched by card key) so re-uploading an edited file is non-destructive.
+  allCards=cards; deckName=name; srsData={};
+  activeCats.clear(); activeDiffs.clear();
+  const saved=lsReadDeck(name);
+  if(saved&&saved.srs) srsData=saved.srs;
+  document.getElementById('bottom-nav').style.display='flex';
+  showScreen('deck');
+  buildFilters(); buildQueue(); renderCard(); updateTopBar();
+  if(!localMode){ await syncLoad(name); buildFilters(); buildQueue(); renderCard(); updateTopBar(); }
+  lsSaveAll();
+  scheduleSyncSave();
+  renderCardList();
+}
+ 
+function newDeck() {
+  allCards=[]; srsData={}; deckName='My Deck';
+  activeCats.clear(); activeDiffs.clear();
+  lsSaveAll();
+  document.getElementById('bottom-nav').style.display='flex';
+  navTo('manage'); renderCardList();
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// SCREENS
+// ════════════════════════════════════════════════════════════════════════════
+const SCREENS=['loading','auth','home','deck','done','manage'];
+function showScreen(name) {
+  SCREENS.forEach(s=>{const el=document.getElementById('screen-'+s);if(!el)return;el.style.display=s===name?'flex':'none';if(s===name)el.style.flexDirection='column';});
+  ['study','manage'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('active',(t==='study'&&(name==='deck'||name==='done'))||(t==='manage'&&name==='manage'));});
+}
+function navTo(tab) {
+  if(tab==='study'){
+    if(!allCards.length){toast('No cards yet — add some in Manage');navTo('manage');return;}
+    buildQueue(); renderCard(); updateTopBar(); showScreen('deck');
+  } else { renderCardList(); showScreen('manage'); }
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// FILTERS
+// ════════════════════════════════════════════════════════════════════════════
+function buildFilters() {
+  const row=document.getElementById('filter-row'); row.innerHTML='';
+  const cats=[...new Set(allCards.map(c=>c.category).filter(Boolean))].sort();
+  const diffs=[...new Set(allCards.map(c=>c.difficulty).filter(Boolean))];
+  diffs.sort((a,b)=>['easy','medium','hard'].indexOf(a)-['easy','medium','hard'].indexOf(b));
+  cats.forEach(cat=>{const b=document.createElement('button');b.className='fpill';b.textContent=cat;b.onclick=()=>{b.classList.toggle('active');activeCats.has(cat)?activeCats.delete(cat):activeCats.add(cat);buildQueue();renderCard();updateTopBar();};row.appendChild(b);});
+  diffs.forEach(diff=>{const b=document.createElement('button');b.className='fpill diff-'+diff;b.textContent=diff;b.onclick=()=>{b.classList.toggle('active');activeDiffs.has(diff)?activeDiffs.delete(diff):activeDiffs.add(diff);buildQueue();renderCard();updateTopBar();};row.appendChild(b);});
+}
+function filteredPool(){
+  return allCards.filter(c=>{
+    const catOk=activeCats.size===0||(c.category&&activeCats.has(c.category));
+    const diffOk=activeDiffs.size===0||(c.difficulty&&activeDiffs.has(c.difficulty));
+    return catOk&&diffOk;
+  });
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// QUEUE
+// ════════════════════════════════════════════════════════════════════════════
+function buildQueue() {
+  const now=Date.now(),pool=filteredPool();
+  const due=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<=now);
+  const newC=pool.filter(c=>!srsData[c.key]);
+  queue=[...due,...newC].map(c=>c.key);
+  qIdx=0; sessionStats={again:0,hard:0,good:0,easy:0};
+}
+function updateTopBar() {
+  const now=Date.now(),pool=filteredPool();
+  document.getElementById('cnt-new').textContent=pool.filter(c=>!srsData[c.key]).length;
+  document.getElementById('cnt-due').textContent=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<=now).length;
+  document.getElementById('cnt-over').textContent=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<now-864e5).length;
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// RENDER CARD
+// ════════════════════════════════════════════════════════════════════════════
+function renderCard() {
+  const noC=document.getElementById('no-cards');
+  const scene=document.getElementById('card-scene');
+  const prog=document.querySelector('.prog-wrap');
+  const nav=document.getElementById('nav-bar');
+  if(qIdx>=queue.length){showDone();return;}
+  noC.style.display='none'; scene.style.visibility='visible'; prog.style.visibility='visible';
+  isFlipped=false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('rating-area').classList.remove('show');
+  nav.classList.remove('hide');
+  const key=queue[qIdx];
+  const c=allCards.find(x=>x.key===key);
+  if(!c){qIdx++;renderCard();return;}
+  const cd=srsData[key]||{interval:0,ease:DEFAULT_EASE,reps:0};
+  const pv=previewIntervals(cd);
+  const isNew=!srsData[key],isDue=srsData[key]&&srsData[key].due<=Date.now();
+  document.getElementById('card-q').textContent=c.q;
+  document.getElementById('card-a').textContent=c.a;
+  document.getElementById('card-counter').textContent=(qIdx+1)+' / '+queue.length;
+  document.getElementById('card-scene').setAttribute('aria-label','Flashcard '+(qIdx+1)+' of '+queue.length+'. Question: '+c.q+'. Press Enter or Space to reveal the answer.');
+  const rcls=isNew?'card-ribbon ribbon-new':isDue?'card-ribbon ribbon-due':'card-ribbon';
+  const rtxt=isNew?'new':isDue?'due':'';
+  ['ribbon-f','ribbon-b'].forEach(id=>{const el=document.getElementById(id);el.className=rcls;el.textContent=rtxt;});
+  const badges=makeBadges(c);
+  document.getElementById('badges-f').innerHTML=badges;
+  document.getElementById('badges-b').innerHTML=badges;
+  document.getElementById('card-interval').textContent=srsData[key]?'Interval: '+fmtDays(srsData[key].interval):'First time seeing this card';
+  document.getElementById('ri-again').textContent=fmtDays(pv.again);
+  document.getElementById('ri-hard').textContent=fmtDays(pv.hard);
+  document.getElementById('ri-good').textContent=fmtDays(pv.good);
+  document.getElementById('ri-easy').textContent=fmtDays(pv.easy);
+  updateProgress();
+}
+function makeBadges(c){let h='';if(c.category)h+=`<span class="cbadge">${escHtml(c.category)}</span>`;if(c.difficulty)h+=`<span class="cbadge ${c.difficulty}">${escHtml(c.difficulty)}</span>`;return h;}
+function updateProgress(){
+  const total=queue.length,s=sessionStats,pct=n=>total?(n/total*100).toFixed(1)+'%':'0%';
+  ['again','hard','good','easy'].forEach(r=>document.getElementById('ps-'+r).style.width=pct(s[r]));
+  document.getElementById('prog-left').textContent=(total-qIdx)+' left';
+  document.getElementById('prog-done').textContent=qIdx+' reviewed';
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// STUDY INTERACTIONS
+// ════════════════════════════════════════════════════════════════════════════
+function handleCardClick(){if(!isFlipped)revealCard();}
+function revealCard(){isFlipped=true;document.getElementById('card-inner').classList.add('flipped');document.getElementById('rating-area').classList.add('show');document.getElementById('nav-bar').classList.add('hide');}
+function rate(r){
+  const key=queue[qIdx];
+  const cd=srsData[key]||{interval:0,ease:DEFAULT_EASE,reps:0,due:0};
+  srsData[key]=sm2(cd,r); sessionStats[r]++;
+  lsSaveAll(); scheduleSyncSave(); qIdx++; updateTopBar(); renderCard();
+}
+function skipCard(){const key=queue.splice(qIdx,1)[0];queue.push(key);renderCard();}
+function showDone(){showScreen('done');['again','hard','good','easy'].forEach(r=>document.getElementById('dn-'+r).textContent=sessionStats[r]);}
+function restartSession(){showScreen('deck');buildQueue();renderCard();updateTopBar();}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// CARD MANAGEMENT
+// ════════════════════════════════════════════════════════════════════════════
+function renderCardList() {
+  const list=document.getElementById('card-list');
+  const si=document.getElementById('search-input');
+  const search=(si&&si.value?si.value:'').toLowerCase();
+  const visible=allCards.filter(c=>!search||c.q.toLowerCase().includes(search)||c.a.toLowerCase().includes(search)||(c.category||'').toLowerCase().includes(search));
+  document.getElementById('manage-count').textContent=allCards.length+' card'+(allCards.length===1?'':'s');
+  document.getElementById('manage-deck-name').textContent=deckName||'';
+  if(!visible.length){list.innerHTML=`<div class="empty-state">${allCards.length?'No cards match your search.':'No cards yet.<br>Hit <strong>＋ Add card</strong> to get started.'}</div>`;return;}
+  list.innerHTML='';
+  visible.forEach(c=>{
+    const sd=srsData[c.key];
+    const srsTxt=sd?`Next: ${fmtDays(Math.max(0,Math.round((sd.due-Date.now())/864e5)))} · ${sd.reps} rep${sd.reps===1?'':'s'}`:'New';
+    const item=document.createElement('div'); item.className='card-list-item';
+    item.innerHTML=`<div class="card-list-content"><div class="card-list-q">${escHtml(c.q)}</div><div class="card-list-a">${escHtml(c.a)}</div><div class="card-list-meta">${c.category?`<span class="cbadge">${escHtml(c.category)}</span>`:''}${c.difficulty?`<span class="cbadge ${c.difficulty}">${escHtml(c.difficulty)}</span>`:''}<span class="card-list-srs">${srsTxt}</span></div></div><div class="card-list-actions"><button class="btn btn-sm btn-icon" title="Edit" aria-label="Edit card" data-key="${escHtml(c.key)}">✎</button></div>`;
+    item.querySelector('button').addEventListener('click',()=>openCardEditor(c.key));
+    list.appendChild(item);
+  });
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+ 
+function openCardEditor(key) {
+  editorCardKey=key;
+  const isNew=key===null;
+  document.getElementById('editor-title').textContent=isNew?'Add card':'Edit card';
+  document.getElementById('ed-delete-btn').style.display=isNew?'none':'inline-flex';
+  if(!isNew){const c=allCards.find(x=>x.key===key);if(!c)return;document.getElementById('ed-question').value=c.q;document.getElementById('ed-answer').value=c.a;document.getElementById('ed-category').value=c.category||'';document.getElementById('ed-difficulty').value=c.difficulty||'';}
+  else{['ed-question','ed-answer','ed-category'].forEach(id=>document.getElementById(id).value='');document.getElementById('ed-difficulty').value='';}
+  document.getElementById('editor-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('ed-question').focus(),100);
+}
+function closeCardEditor(){document.getElementById('editor-modal').classList.remove('open');editorCardKey=null;}
+function editCurrentCard(e){e.stopPropagation();const key=queue[qIdx];if(key)openCardEditor(key);}
+ 
+function saveCard() {
+  const q=document.getElementById('ed-question').value.trim();
+  const a=document.getElementById('ed-answer').value.trim();
+  const cat=document.getElementById('ed-category').value.trim()||null;
+  const diff=document.getElementById('ed-difficulty').value||null;
+  if(!q){toast('Question cannot be empty.');return;}
+  if(!a){toast('Answer cannot be empty.');return;}
+  if(editorCardKey===null){
+    const nk=cardKey(q);
+    if(allCards.find(c=>c.key===nk)){toast('A card with this question already exists.');return;}
+    allCards.push({q,a,category:cat,difficulty:diff,key:nk}); toast('Card added ✓');
+  } else {
+    const idx=allCards.findIndex(c=>c.key===editorCardKey); if(idx<0)return;
+    const nk=cardKey(q);
+    if(nk!==editorCardKey){
+      if(allCards.find(c=>c.key===nk)){toast('Another card already has this question.');return;}
+      if(srsData[editorCardKey]){srsData[nk]=srsData[editorCardKey];delete srsData[editorCardKey];}
+      const qi=queue.indexOf(editorCardKey);if(qi>=0)queue[qi]=nk;
+    }
+    allCards[idx]={q,a,category:cat,difficulty:diff,key:nk}; toast('Card updated ✓');
+  }
+  lsSaveAll(); scheduleSyncSave(); buildFilters(); renderCardList(); closeCardEditor();
+}
+ 
+function confirmDeleteCard(){document.getElementById('editor-modal').classList.remove('open');document.getElementById('confirm-modal').classList.add('open');}
+function closeConfirm(){document.getElementById('confirm-modal').classList.remove('open');if(editorCardKey!==null)openCardEditor(editorCardKey);}
+function doDeleteCard(){
+  if(!editorCardKey)return;
+  allCards=allCards.filter(c=>c.key!==editorCardKey); delete srsData[editorCardKey];
+  const qi=queue.indexOf(editorCardKey);if(qi>=0){queue.splice(qi,1);if(qIdx>qi)qIdx--;}
+  lsSaveAll(); scheduleSyncSave(); buildFilters(); renderCardList();
+  document.getElementById('confirm-modal').classList.remove('open'); editorCardKey=null; toast('Card deleted');
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// EXPORT
+// ════════════════════════════════════════════════════════════════════════════
+function exportDeck() {
+  const data=allCards.map(c=>{const o={question:c.q,answer:c.a};if(c.category)o.category=c.category;if(c.difficulty)o.difficulty=c.difficulty;return o;});
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(deckName||'flashcards').replace(/\.json$/i,'')+'.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('Deck exported ✓');
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// FILE INPUT
+// ════════════════════════════════════════════════════════════════════════════
+document.getElementById('file-input').addEventListener('change',e=>handleFile(e.target.files[0]));
+const uz=document.getElementById('upload-zone');
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('drag');});
+uz.addEventListener('dragleave',()=>uz.classList.remove('drag'));
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('drag');handleFile(e.dataTransfer.files[0]);});
+function handleFile(file) {
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    try{const cards=parseJSON(ev.target.result);document.getElementById('upload-error').style.display='none';await loadDeck(cards,file.name);}
+    catch(err){const el=document.getElementById('upload-error');el.textContent='⚠ '+err.message;el.style.display='block';}
+  };
+  reader.readAsText(file);
+}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// KEYBOARD
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  // Enter submits the auth form when on the auth screen
+  if(document.getElementById('screen-auth').style.display!=='none'){
+    if(e.key==='Enter'&&['auth-email','auth-password'].includes(document.activeElement.id)){e.preventDefault();handleAuth();}
+    return;
+  }
+  if(document.getElementById('editor-modal').classList.contains('open')){
+    if(e.key==='Escape')closeCardEditor();
+    return;
+  }
+  if(document.getElementById('confirm-modal').classList.contains('open')){
+    if(e.key==='Escape')closeConfirm();
+    return;
+  }
+  if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;
+  if(document.getElementById('screen-deck').style.display==='none')return;
+  if(!queue.length||qIdx>=queue.length)return;
+  if(!isFlipped){if(e.key===' '||e.key==='Enter'){e.preventDefault();revealCard();}return;}
+  if(e.key==='1')rate('again'); if(e.key==='2')rate('hard'); if(e.key==='3')rate('good'); if(e.key==='4')rate('easy');
+  if(e.key==='e'){const key=queue[qIdx];if(key)openCardEditor(key);}
+});
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════════════════
+function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur);}
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// PWA
+// ════════════════════════════════════════════════════════════════════════════
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('install-banner').style.display='flex';});
+function installApp(){if(!deferredInstall)return;deferredInstall.prompt();deferredInstall.userChoice.then(()=>{deferredInstall=null;document.getElementById('install-banner').style.display='none';});}
+function dismissInstall(){document.getElementById('install-banner').style.display='none';}
+window.addEventListener('appinstalled',()=>toast('App installed ✓'));
+ 
+// ════════════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════════════
+(async function init() {
+  showScreen('loading');
+  migrateOldLS();
+ 
+  initSupabaseClient();
+  if(!sb){
+    // Credentials haven't been pasted into the file yet.
+    showScreen('auth');
+    showAuthError('This app has not been configured with Supabase credentials yet. Add them near the top of index.html, or use "Continue without account" for local-only mode.');
+    return;
+  }
+  attachAuthListener();
+ 
+  try {
+    const{data:{session}}=await sb.auth.getSession();
+    if(session){ currentUser=session.user; onSignedIn(currentUser); }
+    else { showScreen('auth'); }
+  } catch(e){ showScreen('auth'); }
+})();
+</script>
+</body>
+</html>
