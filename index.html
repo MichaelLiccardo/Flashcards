@@ -15,7 +15,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
 :root {
   --bg:        #0c0d11;
   --bg2:       #13151c;
@@ -40,7 +40,7 @@
   --radius: 18px;
   --radius-sm: 10px;
 }
- 
+
 html { height: 100%; }
 body {
   font-family: var(--sans);
@@ -55,14 +55,14 @@ body::before {
   background-image: linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);
   background-size: 40px 40px; pointer-events: none; z-index: 0;
 }
- 
+
 .app {
   position: relative; z-index: 1;
   width: 100%; max-width: 600px;
   padding: 2rem 1.25rem 5rem;
   display: flex; flex-direction: column; align-items: center;
 }
- 
+
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .app-header {
   width: 100%; display: flex;
@@ -93,7 +93,7 @@ body::before {
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: 99px; padding: 3px 9px;
 }
- 
+
 /* ── Shared components ───────────────────────────────────────────────────── */
 .btn {
   padding: 9px 18px; border-radius: var(--radius-sm);
@@ -114,7 +114,7 @@ body::before {
 .btn-ghost:hover { background: var(--bg3); color: var(--text2); }
 .btn-sm { padding: 6px 13px; font-size: 0.76rem; }
 .btn-icon { padding: 7px 10px; }
- 
+
 .field-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 5px; display: block; }
 .field-input {
   width: 100%; background: var(--bg3); border: 1px solid var(--border2);
@@ -125,7 +125,7 @@ body::before {
 .field-input:focus { border-color: var(--border3); }
 .field-input::placeholder { color: var(--text3); }
 textarea.field-input { min-height: 80px; line-height: 1.5; }
- 
+
 .spinner {
   width: 15px; height: 15px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.2);
@@ -133,7 +133,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
   animation: spin 0.6s linear infinite; flex-shrink: 0;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
- 
+
 /* ── SCREEN: Loading ─────────────────────────────────────────────────────── */
 #screen-loading {
   display: flex; flex-direction: column;
@@ -145,14 +145,14 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
   border: 2px solid var(--border2); border-top-color: var(--text2);
   animation: spin 0.8s linear infinite;
 }
- 
+
 /* ── SCREEN: Auth ────────────────────────────────────────────────────────── */
 #screen-auth { display: none; width: 100%; flex-direction: column; align-items: center; gap: 1.5rem; }
- 
+
 .auth-hero { text-align: center; }
 .auth-hero h2 { font-family: var(--serif); font-size: 2rem; font-weight: normal; font-style: italic; margin-bottom: 6px; }
 .auth-hero p  { font-size: 0.8rem; color: var(--text2); line-height: 1.6; }
- 
+
 .auth-card {
   width: 100%; background: var(--bg2);
   border: 1px solid var(--border2); border-radius: var(--radius);
@@ -170,7 +170,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 }
 .auth-tab:hover { color: var(--text2); }
 .auth-tab.active { color: var(--text); border-bottom-color: var(--text); }
- 
+
 .auth-form { padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem; }
 .auth-field { display: flex; flex-direction: column; gap: 5px; }
 .auth-error {
@@ -186,10 +186,10 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 }
 .auth-success.show { display: block; }
 .auth-hint { font-size: 0.72rem; color: var(--text3); text-align: center; line-height: 1.5; }
- 
+
 .or-divider { font-size: 0.72rem; color: var(--text3); display: flex; align-items: center; gap: 10px; width: 100%; }
 .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background: var(--border2); }
- 
+
 /* Config panel (collapsible) */
 .config-panel {
   width: 100%; background: var(--bg2);
@@ -210,14 +210,14 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .config-status { font-size: 0.7rem; color: var(--text2); }
 .config-status.ok  { color: var(--good); }
 .config-status.err { color: var(--again); }
- 
+
 /* ── SCREEN: Home ────────────────────────────────────────────────────────── */
 #screen-home { display: none; width: 100%; flex-direction: column; align-items: center; gap: 1.5rem; }
- 
+
 .home-hero { text-align: center; }
 .home-hero h2 { font-family: var(--serif); font-size: 2.2rem; font-weight: normal; font-style: italic; line-height: 1.2; margin-bottom: 0.5rem; }
 .home-hero p  { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
- 
+
 .upload-zone {
   width: 100%; border: 1.5px dashed var(--border2);
   border-radius: var(--radius); padding: 2.5rem 2rem;
@@ -231,10 +231,10 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .upload-sub   { font-size: 0.75rem; color: var(--text2); line-height: 1.5; }
 .upload-hint  { font-size: 0.65rem; color: var(--text3); margin-top: 8px; font-family: monospace; }
 .upload-error { font-size: 0.78rem; color: var(--again); text-align: center; }
- 
+
 /* ── SCREEN: Deck ────────────────────────────────────────────────────────── */
 #screen-deck { display: none; width: 100%; flex-direction: column; align-items: center; }
- 
+
 .deck-topbar { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
 .queue-chips { display: flex; gap: 5px; flex-wrap: wrap; }
 .chip { font-size: 0.62rem; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--border2); color: var(--text2); display: flex; align-items: center; gap: 4px; }
@@ -242,7 +242,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .chip-new  .chip-dot { background: var(--easy); }
 .chip-due  .chip-dot { background: var(--good); }
 .chip-over .chip-dot { background: var(--again); }
- 
+
 .filter-row { width: 100%; display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; min-height: 1px; }
 .fpill { padding: 3px 11px; border-radius: 99px; border: 1px solid var(--border2); background: var(--bg2); font-size: 0.65rem; cursor: pointer; color: var(--text2); transition: all 0.15s; font-family: var(--sans); }
 .fpill:hover { border-color: var(--border3); color: var(--text); }
@@ -250,14 +250,14 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .fpill.diff-easy.active   { background: var(--easy);  border-color: var(--easy);  color: #000; }
 .fpill.diff-medium.active { background: var(--hard);  border-color: var(--hard);  color: #000; }
 .fpill.diff-hard.active   { background: var(--again); border-color: var(--again); color: #fff; }
- 
+
 .prog-wrap { width: 100%; margin-bottom: 1.5rem; }
 .prog-track { height: 3px; background: var(--bg4); border-radius: 99px; overflow: hidden; display: flex; }
 .prog-seg { height: 100%; transition: width 0.4s ease; }
 .ps-again { background: var(--again); } .ps-hard { background: var(--hard); }
 .ps-good  { background: var(--good); }  .ps-easy { background: var(--easy); }
 .prog-labels { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--text3); margin-top: 5px; }
- 
+
 .scene { width: 100%; height: 310px; perspective: 1400px; cursor: pointer; margin-bottom: 1.5rem; }
 .card-inner { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.52s cubic-bezier(0.4,0,0.2,1); }
 .card-inner.flipped { transform: rotateY(180deg); }
@@ -285,7 +285,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .card-ribbon.ribbon-due { color:var(--good);  border-color:var(--good); }
 .card-edit-btn { position:absolute; top:14px; left:14px; font-size:0.6rem; padding:3px 8px; border-radius:99px; border:1px solid var(--border2); color:var(--text3); background:none; cursor:pointer; font-family:var(--sans); transition:border-color 0.15s,color 0.15s; backface-visibility:hidden; -webkit-backface-visibility:hidden; }
 .card-edit-btn:hover { border-color:var(--border3); color:var(--text2); }
- 
+
 .rating-area { display: none; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
 .rating-area.show { display: flex; }
 .rating-label { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); }
@@ -298,12 +298,12 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .rb-hard  { background: var(--hard-dim);  color: var(--hard);  border-color: rgba(255,170,68,0.3); }
 .rb-good  { background: var(--good-dim);  color: var(--good);  border-color: rgba(68,212,148,0.3); }
 .rb-easy  { background: var(--easy-dim);  color: var(--easy);  border-color: rgba(91,156,246,0.3); }
- 
+
 .nav-bar { display: flex; align-items: center; gap: 8px; }
 .nav-bar.hide { display: none; }
 .card-counter { font-size: 0.68rem; color: var(--text3); min-width: 56px; text-align: center; }
 .no-cards-notice { display: none; font-size: 0.82rem; color: var(--text3); text-align: center; padding: 2rem 1rem; width: 100%; }
- 
+
 /* ── SCREEN: Done ────────────────────────────────────────────────────────── */
 #screen-done { display: none; flex-direction: column; align-items: center; gap: 1.25rem; text-align: center; width: 100%; background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border); padding: 3rem 2rem; }
 #screen-done h2 { font-family: var(--serif); font-size: 2rem; font-weight: normal; font-style: italic; }
@@ -314,7 +314,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .dv-again { color: var(--again); } .dv-hard { color: var(--hard); }
 .dv-good  { color: var(--good); }  .dv-easy { color: var(--easy); }
 .done-lbl { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); }
- 
+
 /* ── SCREEN: Manage ──────────────────────────────────────────────────────── */
 #screen-manage { display: none; width: 100%; flex-direction: column; gap: 1.25rem; }
 .manage-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -328,7 +328,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .card-list-srs  { font-size: 0.6rem; color: var(--text3); }
 .card-list-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text3); font-size: 0.85rem; line-height: 1.7; }
- 
+
 /* ── Modal ───────────────────────────────────────────────────────────────── */
 .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: center; justify-content: center; padding: 1.25rem; }
 .modal-overlay.open { display: flex; }
@@ -341,32 +341,33 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .modal-field { display: flex; flex-direction: column; gap: 5px; }
 .modal-footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 4px; }
 .modal-footer-right { display: flex; gap: 8px; }
- 
+
 /* ── Bottom nav ──────────────────────────────────────────────────────────── */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--border); display: flex; justify-content: center; padding: 0.6rem 1rem env(safe-area-inset-bottom); z-index: 50; gap: 2rem; }
 .nav-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.6rem; color: var(--text3); cursor: pointer; background: none; border: none; font-family: var(--sans); padding: 6px 16px; border-radius: var(--radius-sm); transition: color 0.15s; }
 .nav-tab .tab-icon { font-size: 1.15rem; }
 .nav-tab:hover { color: var(--text2); }
 .nav-tab.active { color: var(--text); }
- 
-/* ── Install banner ──────────────────────────────────────────────────────── */
-#install-banner { display: none; position: fixed; bottom: 4.5rem; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--border2); border-radius: var(--radius); padding: 1rem 1.25rem; width: calc(100% - 2.5rem); max-width: 520px; z-index: 50; box-shadow: 0 8px 40px rgba(0,0,0,0.5); flex-direction: column; gap: 10px; animation: slideup 0.3s ease; }
-@keyframes slideup { from{transform:translateX(-50%) translateY(16px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
-.banner-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.banner-text h4 { font-size: 0.88rem; font-weight: 600; margin-bottom: 3px; }
-.banner-text p  { font-size: 0.72rem; color: var(--text2); }
-.banner-btns { display: flex; gap: 8px; flex-shrink: 0; }
- 
+
+/* ── Deck list (cloud library / picker) ──────────────────────────────────── */
+.deck-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.deck-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+.deck-item:hover { border-color: var(--border3); background: var(--bg3); }
+.deck-item-main { min-width: 0; }
+.deck-item-name { font-size: 0.92rem; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deck-item-meta { font-size: 0.68rem; color: var(--text3); }
+.deck-item-go { font-size: 0.75rem; color: var(--text2); flex-shrink: 0; }
+
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg3); border: 1px solid var(--border2); border-radius: 99px; padding: 8px 18px; font-size: 0.75rem; color: var(--text2); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; white-space: nowrap; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
- 
+
 .back-link { font-size: 0.68rem; color: var(--text3); background: none; border: none; cursor: pointer; text-decoration: underline; font-family: var(--sans); padding: 0; margin-top: 4px; }
 .back-link:hover { color: var(--text2); }
 </style>
 </head>
 <body>
- 
+
 <div class="app">
   <!-- ── Header (always visible) ───────────────────────────────────────── -->
   <header class="app-header">
@@ -376,14 +377,14 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <span class="sync-label" id="sync-label">—</span>
     </div>
   </header>
- 
+
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: Loading                                                     -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <div id="screen-loading">
     <div class="loading-ring"></div>
   </div>
- 
+
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: Auth                                                        -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -392,7 +393,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <h2>Sign in to continue</h2>
       <p>Your flashcards are private and encrypted.<br>Sign in to access your decks on any device.</p>
     </div>
- 
+
     <div class="auth-card">
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-signin"  onclick="setAuthMode('signin')">Sign in</button>
@@ -416,13 +417,13 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
         <p class="auth-hint" id="auth-hint" style="display:none"></p>
       </div>
     </div>
- 
+
     <div class="or-divider">or</div>
     <button class="btn" style="width:100%" onclick="continueLocally()">
       Continue without account <span style="font-size:0.7rem;opacity:0.6">(local only, not private)</span>
     </button>
   </div>
- 
+
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: Home                                                        -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -431,7 +432,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <h2>Ready to study?</h2>
       <p>Load a JSON deck or create a new one from scratch.</p>
     </div>
- 
+
     <div class="upload-zone" id="upload-zone">
       <input type="file" accept=".json" id="file-input">
       <span class="upload-icon">{ }</span>
@@ -439,12 +440,33 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <div class="upload-sub">Drop your file here or click to browse</div>
       <div class="upload-hint">[ { "question": "…", "answer": "…", "category": "…", "difficulty": "easy|medium|hard" } ]</div>
     </div>
- 
+
     <div class="or-divider">or</div>
     <button class="btn btn-primary" style="width:100%" onclick="newDeck()">＋ Create a new deck</button>
     <p class="upload-error" id="upload-error" style="display:none"></p>
+
+    <div id="home-decks-section" style="display:none;width:100%;flex-direction:column;gap:1rem">
+      <div class="or-divider">your synced decks</div>
+      <div class="deck-list" id="home-decks-list"></div>
+    </div>
   </div>
- 
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: My Decks (cloud picker)                                     -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-decks">
+    <div class="home-hero" style="margin-bottom:0.25rem">
+      <h2>My Decks</h2>
+      <p>Pick a deck to study, or load and create new ones.</p>
+    </div>
+    <div class="manage-toolbar" style="justify-content:flex-end;width:100%">
+      <button class="btn btn-sm" onclick="renderDeckList('decks-list')">↻ Refresh</button>
+    </div>
+    <div class="deck-list" id="decks-list"></div>
+    <div class="or-divider">or</div>
+    <button class="btn" style="width:100%" onclick="showScreen('home')">＋ Load or create a deck</button>
+  </div>
+
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: Study                                                       -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -457,10 +479,10 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       </div>
       <button class="btn btn-ghost btn-sm" onclick="showScreen('home')">✕ Close</button>
     </div>
- 
+
     <div class="filter-row" id="filter-row"></div>
     <div class="no-cards-notice" id="no-cards">No cards due with current filters.</div>
- 
+
     <div class="prog-wrap">
       <div class="prog-track">
         <div class="prog-seg ps-again" id="ps-again" style="width:0%"></div>
@@ -470,7 +492,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       </div>
       <div class="prog-labels"><span id="prog-left">—</span><span id="prog-done">—</span></div>
     </div>
- 
+
     <div class="scene" id="card-scene" role="button" tabindex="0" aria-label="Flashcard. Press Enter or Space to reveal the answer." onclick="handleCardClick()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();handleCardClick();}">
       <div class="card-inner" id="card-inner">
         <div class="card-face card-front">
@@ -490,7 +512,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
         </div>
       </div>
     </div>
- 
+
     <div class="rating-area" id="rating-area">
       <span class="rating-label">How well did you know this?</span>
       <div class="rating-btns">
@@ -500,7 +522,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
         <button class="r-btn rb-easy"  onclick="rate('easy')">Easy<span class="r-next" id="ri-easy"></span><span class="r-key">[4]</span></button>
       </div>
     </div>
- 
+
     <div class="nav-bar" id="nav-bar">
       <button class="btn btn-sm" onclick="skipCard()">Skip</button>
       <span class="card-counter" id="card-counter">—</span>
@@ -508,7 +530,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     </div>
     <button class="back-link" onclick="showScreen('home')" style="margin-top:12px">Load a different deck</button>
   </div>
- 
+
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: Done                                                        -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -524,7 +546,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     <button class="btn btn-primary" onclick="restartSession()">Review again</button>
     <button class="back-link" onclick="showScreen('home')">Load a different deck</button>
   </div>
- 
+
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <!-- SCREEN: Manage                                                      -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -541,13 +563,14 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     <div class="card-list" id="card-list"></div>
   </div>
 </div><!-- /app -->
- 
+
 <!-- Bottom nav -->
 <nav class="bottom-nav" id="bottom-nav" style="display:none">
+  <button class="nav-tab" id="tab-decks"  onclick="navTo('decks')"><span class="tab-icon">📚</span>Decks</button>
   <button class="nav-tab" id="tab-study"  onclick="navTo('study')"><span class="tab-icon">🃏</span>Study</button>
   <button class="nav-tab" id="tab-manage" onclick="navTo('manage')"><span class="tab-icon">✏️</span>Manage</button>
 </nav>
- 
+
 <!-- Card editor modal -->
 <div class="modal-overlay" id="editor-modal">
   <div class="modal">
@@ -587,7 +610,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     </div>
   </div>
 </div>
- 
+
 <!-- Confirm delete modal -->
 <div class="modal-overlay" id="confirm-modal">
   <div class="modal" style="max-width:360px">
@@ -605,20 +628,9 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     </div>
   </div>
 </div>
- 
-<!-- Install banner -->
-<div id="install-banner">
-  <div class="banner-row">
-    <div class="banner-text"><h4>Install Flashcards</h4><p>Add to home screen for offline access</p></div>
-    <div class="banner-btns">
-      <button class="btn btn-sm" onclick="dismissInstall()">Not now</button>
-      <button class="btn btn-primary btn-sm" onclick="installApp()">Install</button>
-    </div>
-  </div>
-</div>
- 
+
 <div id="toast"></div>
- 
+
 <script>
 // ════════════════════════════════════════════════════════════════════════════
 // CONFIG — your Supabase credentials (safe to be public; RLS protects the data)
@@ -630,24 +642,24 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 //  └──────────────────────────────────────────────────────────────────────┘
 const SUPABASE_URL = 'https://ehigksjmazhgfburhlzp.supabase.co';   // e.g. https://abcdefgh.supabase.co
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoaWdrc2ptYXpoZ2ZidXJobHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzk1MDEsImV4cCI6MjA5NTY1NTUwMX0.QUdtvmT1v1Anl_seeqfbZZxme3LgNUuUEPa2SbZdZR8'; // e.g. eyJhbGciOiJIUzI1NiI...
- 
+
 function getConfig() {
   const url = SUPABASE_URL.replace(/\/$/, '');
   // Treat the unfilled placeholders as "not configured".
   if (url.startsWith('PASTE_') || SUPABASE_ANON_KEY.startsWith('PASTE_')) return {};
   return { url, key: SUPABASE_ANON_KEY };
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // SUPABASE CLIENT
 // ════════════════════════════════════════════════════════════════════════════
 let sb=null, currentUser=null, localMode=false, authListenerAttached=false;
- 
+
 function initSupabaseClient() {
   const cfg=getConfig();
   if(cfg.url&&cfg.key&&typeof supabase!=='undefined') sb=supabase.createClient(cfg.url,cfg.key);
 }
- 
+
 function attachAuthListener() {
   if(!sb||authListenerAttached) return;
   authListenerAttached=true;
@@ -661,7 +673,7 @@ function attachAuthListener() {
     }
   });
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // AUTH UI
 // ════════════════════════════════════════════════════════════════════════════
@@ -678,7 +690,7 @@ function setAuthMode(mode) {
   if(mode==='signin'){pwField.style.display='flex';btnLabel.textContent='Sign in';document.getElementById('auth-password').setAttribute('autocomplete','current-password');}
   if(mode==='signup'){pwField.style.display='flex';btnLabel.textContent='Create account';document.getElementById('auth-password').setAttribute('autocomplete','new-password');}
 }
- 
+
 async function handleAuth() {
   if(!sb){showAuthError('App is not configured with Supabase credentials yet.');return;}
   const email=document.getElementById('auth-email').value.trim();
@@ -702,7 +714,7 @@ async function handleAuth() {
   } catch(err){ showAuthError(friendlyAuthError(err.message||String(err))); }
   finally{ busy(false); }
 }
- 
+
 function friendlyAuthError(msg) {
   if(msg.includes('Invalid login credentials')) return 'Wrong email or password. Please try again.';
   if(msg.includes('Email not confirmed'))  return 'Please confirm your email address first. Check your inbox.';
@@ -714,14 +726,14 @@ function friendlyAuthError(msg) {
 }
 function showAuthError(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.classList.add('show');document.getElementById('auth-success').classList.remove('show');}
 function showAuthSuccess(msg){const el=document.getElementById('auth-success');el.textContent=msg;el.classList.add('show');document.getElementById('auth-error').classList.remove('show');}
- 
+
 function continueLocally() {
   localMode=true; currentUser=null;
   updateHeaderUI(); lsLoadActive();
   document.getElementById('bottom-nav').style.display='flex';
   if(allCards.length) navTo('study'); else showScreen('home');
 }
- 
+
 async function signOut() {
   if(sb) await sb.auth.signOut();
   currentUser=null; localMode=false;
@@ -729,19 +741,14 @@ async function signOut() {
   document.getElementById('bottom-nav').style.display='none';
   updateHeaderUI(); showScreen('auth'); toast('Signed out');
 }
- 
+
 function onSignedIn(user) {
   currentUser=user; localMode=false;
-  updateHeaderUI(); lsLoadActive();
+  updateHeaderUI();
   document.getElementById('bottom-nav').style.display='flex';
-  if(allCards.length){
-    navTo('study');
-    syncLoad(deckName).then(()=>{buildFilters();buildQueue();renderCard();updateTopBar();renderCardList();});
-  } else {
-    showScreen('home');
-  }
+  navTo('decks'); // show the cloud deck picker so any device sees its synced decks
 }
- 
+
 function updateHeaderUI() {
   const hr=document.getElementById('header-right');
   if(currentUser){
@@ -755,7 +762,7 @@ function updateHeaderUI() {
     hr.innerHTML=`<span class="sync-dot" id="sync-dot"></span><span class="sync-label" id="sync-label">—</span>`;
   }
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // SM-2
 // ════════════════════════════════════════════════════════════════════════════
@@ -771,7 +778,7 @@ function sm2(card,rating) {
 function previewIntervals(card){return Object.fromEntries(['again','hard','good','easy'].map(r=>[r,sm2(card,r).interval]));}
 function fmtDays(d){if(!d||d<1)return'<1d';if(d===1)return'1d';if(d<30)return d+'d';if(d<365)return Math.round(d/30)+'mo';return(d/365).toFixed(1)+'yr';}
 function cardKey(q){try{return btoa(encodeURIComponent(q)).slice(0,40);}catch(e){return q.slice(0,40);}}
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════════════════
@@ -779,13 +786,13 @@ let allCards=[], srsData={}, queue=[], qIdx=0, isFlipped=false;
 let sessionStats={again:0,hard:0,good:0,easy:0};
 let deckName='', activeCats=new Set(), activeDiffs=new Set();
 let editorCardKey=null, pendingSync=false;
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // LOCALSTORAGE — keyed PER DECK so multiple decks coexist (matches DB schema)
 // ════════════════════════════════════════════════════════════════════════════
 const LS_ACTIVE='fc_active';
 function deckLSKey(name){return 'fc_deck_'+encodeURIComponent(name);}
- 
+
 function lsSaveAll() {
   if(!deckName) return;
   try {
@@ -823,7 +830,7 @@ function migrateOldLS() {
     localStorage.removeItem('fc_cards'); localStorage.removeItem('fc_srs'); localStorage.removeItem('fc_name');
   } catch(e){}
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // SUPABASE SYNC
 // ════════════════════════════════════════════════════════════════════════════
@@ -832,7 +839,7 @@ function setSyncStatus(state,msg){
   if(dot)dot.className='sync-dot '+state;
   if(lbl)lbl.textContent=msg||state;
 }
- 
+
 // Last-write-wins by timestamp: whichever of local/remote was saved later wins.
 async function syncLoad(name) {
   if(!sb||!currentUser) return false;
@@ -855,7 +862,7 @@ async function syncLoad(name) {
     return true;
   } catch(e){ setSyncStatus('error','sync failed'); return false; }
 }
- 
+
 let syncTimer=null;
 function scheduleSyncSave(){clearTimeout(syncTimer);syncTimer=setTimeout(syncSave,1500);}
 async function syncSave() {
@@ -872,7 +879,7 @@ async function syncSave() {
 }
 window.addEventListener('online',()=>{ if(currentUser) setSyncStatus('synced','synced'); if(pendingSync&&!localMode)syncSave(); });
 window.addEventListener('offline',()=>setSyncStatus('offline','offline'));
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // JSON PARSING
 // ════════════════════════════════════════════════════════════════════════════
@@ -890,7 +897,7 @@ function parseJSON(text) {
   if(!cards.length)throw new Error('No valid cards found. Each card needs "question" and "answer".');
   return cards;
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // DECK LOADING
 // ════════════════════════════════════════════════════════════════════════════
@@ -909,7 +916,7 @@ async function loadDeck(cards,name) {
   scheduleSyncSave();
   renderCardList();
 }
- 
+
 function newDeck() {
   allCards=[]; srsData={}; deckName='My Deck';
   activeCats.clear(); activeDiffs.clear();
@@ -917,22 +924,74 @@ function newDeck() {
   document.getElementById('bottom-nav').style.display='flex';
   navTo('manage'); renderCardList();
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // SCREENS
 // ════════════════════════════════════════════════════════════════════════════
-const SCREENS=['loading','auth','home','deck','done','manage'];
+const SCREENS=['loading','auth','home','decks','deck','done','manage'];
 function showScreen(name) {
   SCREENS.forEach(s=>{const el=document.getElementById('screen-'+s);if(!el)return;el.style.display=s===name?'flex':'none';if(s===name)el.style.flexDirection='column';});
-  ['study','manage'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('active',(t==='study'&&(name==='deck'||name==='done'))||(t==='manage'&&name==='manage'));});
+  ['decks','study','manage'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('active',(t==='decks'&&name==='decks')||(t==='study'&&(name==='deck'||name==='done'))||(t==='manage'&&name==='manage'));});
+  // Cloud-deck lists render whenever their screen appears (signed-in only).
+  if(name==='decks') renderDeckList('decks-list');
+  if(name==='home'){
+    const sec=document.getElementById('home-decks-section');
+    if(currentUser){ sec.style.display='flex'; renderDeckList('home-decks-list'); }
+    else { sec.style.display='none'; }
+  }
 }
 function navTo(tab) {
+  if(tab==='decks'){ showScreen('decks'); return; }
   if(tab==='study'){
     if(!allCards.length){toast('No cards yet — add some in Manage');navTo('manage');return;}
     buildQueue(); renderCard(); updateTopBar(); showScreen('deck');
   } else { renderCardList(); showScreen('manage'); }
 }
- 
+
+// ════════════════════════════════════════════════════════════════════════════
+// CLOUD DECK LIBRARY
+// ════════════════════════════════════════════════════════════════════════════
+async function fetchCloudDecks() {
+  if(!sb||!currentUser) return [];
+  try {
+    const{data,error}=await sb.from('flashcard_progress')
+      .select('deck_name,cards_data,updated_at').order('updated_at',{ascending:false});
+    if(error||!data) return [];
+    return data.map(r=>({name:r.deck_name, count:Array.isArray(r.cards_data)?r.cards_data.length:0, updated:r.updated_at}));
+  } catch(e){ return []; }
+}
+
+async function renderDeckList(containerId) {
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(!currentUser){ el.innerHTML='<div class="empty-state">Sign in to see decks synced from your other devices.</div>'; return; }
+  el.innerHTML='<div class="empty-state">Loading your decks…</div>';
+  const decks=await fetchCloudDecks();
+  if(!decks.length){ el.innerHTML='<div class="empty-state">No decks in the cloud yet.<br>Load or create one and it\'ll appear here on all your devices.</div>'; return; }
+  el.innerHTML='';
+  decks.forEach(d=>{
+    const item=document.createElement('div'); item.className='deck-item';
+    const when=d.updated?new Date(d.updated).toLocaleDateString():'';
+    const isCurrent=d.name===deckName;
+    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><span class="deck-item-go">Open →</span>`;
+    item.onclick=()=>openCloudDeck(d.name);
+    el.appendChild(item);
+  });
+}
+
+// Load a specific deck from Supabase into the working session.
+async function openCloudDeck(name) {
+  allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
+  activeCats.clear(); activeDiffs.clear();
+  setSyncStatus('syncing','loading…');
+  await syncLoad(name);   // pulls cards_data + srs_data for this deck name
+  lsSaveAll();
+  document.getElementById('bottom-nav').style.display='flex';
+  buildFilters(); buildQueue(); updateTopBar(); renderCardList();
+  if(allCards.length){ renderCard(); showScreen('deck'); }
+  else { showScreen('manage'); toast('That deck has no cards yet'); }
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // FILTERS
 // ════════════════════════════════════════════════════════════════════════════
@@ -951,7 +1010,7 @@ function filteredPool(){
     return catOk&&diffOk;
   });
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // QUEUE
 // ════════════════════════════════════════════════════════════════════════════
@@ -968,7 +1027,7 @@ function updateTopBar() {
   document.getElementById('cnt-due').textContent=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<=now).length;
   document.getElementById('cnt-over').textContent=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<now-864e5).length;
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // RENDER CARD
 // ════════════════════════════════════════════════════════════════════════════
@@ -1013,7 +1072,7 @@ function updateProgress(){
   document.getElementById('prog-left').textContent=(total-qIdx)+' left';
   document.getElementById('prog-done').textContent=qIdx+' reviewed';
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // STUDY INTERACTIONS
 // ════════════════════════════════════════════════════════════════════════════
@@ -1028,7 +1087,7 @@ function rate(r){
 function skipCard(){const key=queue.splice(qIdx,1)[0];queue.push(key);renderCard();}
 function showDone(){showScreen('done');['again','hard','good','easy'].forEach(r=>document.getElementById('dn-'+r).textContent=sessionStats[r]);}
 function restartSession(){showScreen('deck');buildQueue();renderCard();updateTopBar();}
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // CARD MANAGEMENT
 // ════════════════════════════════════════════════════════════════════════════
@@ -1051,7 +1110,7 @@ function renderCardList() {
   });
 }
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
- 
+
 function openCardEditor(key) {
   editorCardKey=key;
   const isNew=key===null;
@@ -1064,7 +1123,7 @@ function openCardEditor(key) {
 }
 function closeCardEditor(){document.getElementById('editor-modal').classList.remove('open');editorCardKey=null;}
 function editCurrentCard(e){e.stopPropagation();const key=queue[qIdx];if(key)openCardEditor(key);}
- 
+
 function saveCard() {
   const q=document.getElementById('ed-question').value.trim();
   const a=document.getElementById('ed-answer').value.trim();
@@ -1088,7 +1147,7 @@ function saveCard() {
   }
   lsSaveAll(); scheduleSyncSave(); buildFilters(); renderCardList(); closeCardEditor();
 }
- 
+
 function confirmDeleteCard(){document.getElementById('editor-modal').classList.remove('open');document.getElementById('confirm-modal').classList.add('open');}
 function closeConfirm(){document.getElementById('confirm-modal').classList.remove('open');if(editorCardKey!==null)openCardEditor(editorCardKey);}
 function doDeleteCard(){
@@ -1098,7 +1157,7 @@ function doDeleteCard(){
   lsSaveAll(); scheduleSyncSave(); buildFilters(); renderCardList();
   document.getElementById('confirm-modal').classList.remove('open'); editorCardKey=null; toast('Card deleted');
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // EXPORT
 // ════════════════════════════════════════════════════════════════════════════
@@ -1109,7 +1168,7 @@ function exportDeck() {
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   toast('Deck exported ✓');
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // FILE INPUT
 // ════════════════════════════════════════════════════════════════════════════
@@ -1127,7 +1186,7 @@ function handleFile(file) {
   };
   reader.readAsText(file);
 }
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // KEYBOARD
 // ════════════════════════════════════════════════════════════════════════════
@@ -1152,29 +1211,26 @@ document.addEventListener('keydown',e=>{
   if(e.key==='1')rate('again'); if(e.key==='2')rate('hard'); if(e.key==='3')rate('good'); if(e.key==='4')rate('easy');
   if(e.key==='e'){const key=queue[qIdx];if(key)openCardEditor(key);}
 });
- 
+
 // ════════════════════════════════════════════════════════════════════════════
 // TOAST
 // ════════════════════════════════════════════════════════════════════════════
 function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur);}
- 
+
 // ════════════════════════════════════════════════════════════════════════════
-// PWA
+// PWA — service worker only (offline caching). No install prompt.
 // ════════════════════════════════════════════════════════════════════════════
 if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-let deferredInstall=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;if(!window.matchMedia('(display-mode: standalone)').matches)document.getElementById('install-banner').style.display='flex';});
-function installApp(){if(!deferredInstall)return;deferredInstall.prompt();deferredInstall.userChoice.then(()=>{deferredInstall=null;document.getElementById('install-banner').style.display='none';});}
-function dismissInstall(){document.getElementById('install-banner').style.display='none';}
-window.addEventListener('appinstalled',()=>toast('App installed ✓'));
- 
+// Suppress the browser's automatic install prompt so no "add to home screen" UI appears.
+window.addEventListener('beforeinstallprompt',e=>e.preventDefault());
+
 // ════════════════════════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════════════════════════
 (async function init() {
   showScreen('loading');
   migrateOldLS();
- 
+
   initSupabaseClient();
   if(!sb){
     // Credentials haven't been pasted into the file yet.
@@ -1183,7 +1239,7 @@ window.addEventListener('appinstalled',()=>toast('App installed ✓'));
     return;
   }
   attachAuthListener();
- 
+
   try {
     const{data:{session}}=await sb.auth.getSession();
     if(session){ currentUser=session.user; onSignedIn(currentUser); }
