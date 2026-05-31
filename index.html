@@ -303,6 +303,10 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .nav-bar.hide { display: none; }
 .card-counter { font-size: 0.68rem; color: var(--text3); min-width: 56px; text-align: center; }
 .no-cards-notice { display: none; font-size: 0.82rem; color: var(--text3); text-align: center; padding: 2rem 1rem; width: 100%; }
+.study-mode-row { display: flex; justify-content: center; width: 100%; margin-bottom: 1.25rem; }
+.mode-seg { display: inline-flex; gap: 4px; background: var(--bg2); border: 1px solid var(--border2); border-radius: 99px; padding: 3px; }
+.mode-opt { padding: 5px 16px; border: none; background: none; color: var(--text2); font-size: 0.7rem; border-radius: 99px; cursor: pointer; font-family: var(--sans); transition: background .15s, color .15s; }
+.mode-opt.active { background: var(--text); color: var(--bg); }
 
 /* ── SCREEN: Done ────────────────────────────────────────────────────────── */
 #screen-done { display: none; flex-direction: column; align-items: center; gap: 1.25rem; text-align: center; width: 100%; background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border); padding: 3rem 2rem; }
@@ -358,6 +362,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .deck-item-meta { font-size: 0.68rem; color: var(--text3); }
 .deck-item-go { font-size: 0.75rem; color: var(--text2); flex-shrink: 0; }
 .deck-item-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.due-badge { background: var(--again); color: #fff; font-size: 0.62rem; font-weight: 600; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
 .deck-del { color: var(--text3); }
 .deck-del:hover { color: var(--again); border-color: var(--again); }
 
@@ -484,6 +489,12 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     </div>
 
     <div class="filter-row" id="filter-row"></div>
+    <div class="study-mode-row">
+      <div class="mode-seg">
+        <button class="mode-opt active" id="mode-due" onclick="setStudyMode(false)">Due only</button>
+        <button class="mode-opt" id="mode-all" onclick="setStudyMode(true)">All cards</button>
+      </div>
+    </div>
     <div class="no-cards-notice" id="no-cards">No cards due with current filters.</div>
 
     <div class="prog-wrap">
@@ -547,6 +558,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <div class="done-stat"><span class="done-val dv-easy"  id="dn-easy">0</span><span class="done-lbl">Easy</span></div>
     </div>
     <button class="btn btn-primary" onclick="restartSession()">Review again</button>
+    <button class="btn" onclick="reviewAll()">Review all cards</button>
     <button class="back-link" onclick="showScreen('home')">Load a different deck</button>
   </div>
 
@@ -831,6 +843,7 @@ let allCards=[], srsData={}, queue=[], qIdx=0, isFlipped=false;
 let sessionStats={again:0,hard:0,good:0,easy:0};
 let deckName='', activeCats=new Set(), activeDiffs=new Set();
 let editorCardKey=null, pendingSync=false;
+let studyAllMode=false; // false = SRS due-only (default), true = show every card
 
 // ════════════════════════════════════════════════════════════════════════════
 // LOCALSTORAGE — keyed PER DECK so multiple decks coexist (matches DB schema)
@@ -951,7 +964,7 @@ async function loadDeck(cards,name) {
   // The uploaded file is authoritative for card CONTENT; we keep any saved SRS
   // progress (matched by card key) so re-uploading an edited file is non-destructive.
   allCards=cards; deckName=name; srsData={};
-  activeCats.clear(); activeDiffs.clear();
+  activeCats.clear(); activeDiffs.clear(); resetStudyMode();
   const saved=lsReadDeck(name);
   if(saved&&saved.srs) srsData=saved.srs;
   document.getElementById('bottom-nav').style.display='flex';
@@ -980,7 +993,7 @@ async function createDeck() {
     if(decks.some(d=>d.name===name)){ toast('A deck with that name already exists.'); return; }
   }
   allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
-  activeCats.clear(); activeDiffs.clear();
+  activeCats.clear(); activeDiffs.clear(); resetStudyMode();
   lsSaveAll(); scheduleSyncSave();
   closeNewDeck();
   document.getElementById('bottom-nav').style.display='flex';
@@ -1044,9 +1057,21 @@ async function fetchCloudDecks() {
   if(!sb||!currentUser) return [];
   try {
     const{data,error}=await sb.from('flashcard_progress')
-      .select('deck_name,cards_data,updated_at').order('updated_at',{ascending:false});
+      .select('deck_name,cards_data,srs_data,updated_at').order('updated_at',{ascending:false});
     if(error||!data) return [];
-    return data.map(r=>({name:r.deck_name, count:Array.isArray(r.cards_data)?r.cards_data.length:0, updated:r.updated_at}));
+    const now=Date.now();
+    return data.map(r=>{
+      const cards=Array.isArray(r.cards_data)?r.cards_data:[];
+      const srs=r.srs_data||{};
+      // "Due" = same set the study queue would surface: new cards + cards past their due time.
+      let due=0;
+      for(const c of cards){
+        const key=c.key||cardKey(c.q||c.question||'');
+        const s=srs[key];
+        if(!s || s.due<=now) due++;
+      }
+      return {name:r.deck_name, count:cards.length, due, updated:r.updated_at};
+    });
   } catch(e){ return []; }
 }
 
@@ -1062,7 +1087,8 @@ async function renderDeckList(containerId) {
     const item=document.createElement('div'); item.className='deck-item';
     const when=d.updated?new Date(d.updated).toLocaleDateString():'';
     const isCurrent=d.name===deckName;
-    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><div class="deck-item-actions"><button class="btn btn-sm btn-icon deck-del" title="Delete deck" aria-label="Delete deck">🗑</button><span class="deck-item-go">Open →</span></div>`;
+    const badge=d.due>0?`<span class="due-badge" title="${d.due} card${d.due===1?'':'s'} due">${d.due>99?'99+':d.due}</span>`:'';
+    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><div class="deck-item-actions">${badge}<button class="btn btn-sm btn-icon deck-del" title="Delete deck" aria-label="Delete deck">🗑</button><span class="deck-item-go">Open →</span></div>`;
     item.onclick=()=>openCloudDeck(d.name);
     item.querySelector('.deck-del').addEventListener('click',ev=>{ ev.stopPropagation(); confirmDeleteDeck(d.name); });
     el.appendChild(item);
@@ -1072,7 +1098,7 @@ async function renderDeckList(containerId) {
 // Load a specific deck from Supabase into the working session.
 async function openCloudDeck(name) {
   allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
-  activeCats.clear(); activeDiffs.clear();
+  activeCats.clear(); activeDiffs.clear(); resetStudyMode();
   setSyncStatus('syncing','loading…');
   await syncLoad(name);   // pulls cards_data + srs_data for this deck name
   lsSaveAll();
@@ -1106,11 +1132,29 @@ function filteredPool(){
 // ════════════════════════════════════════════════════════════════════════════
 function buildQueue() {
   const now=Date.now(),pool=filteredPool();
-  const due=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<=now);
-  const newC=pool.filter(c=>!srsData[c.key]);
-  queue=[...due,...newC].map(c=>c.key);
+  if(studyAllMode){
+    queue=pool.map(c=>c.key); // every card in the (filtered) deck, due or not
+  } else {
+    const due=pool.filter(c=>srsData[c.key]&&srsData[c.key].due<=now);
+    const newC=pool.filter(c=>!srsData[c.key]);
+    queue=[...due,...newC].map(c=>c.key);
+  }
   qIdx=0; sessionStats={again:0,hard:0,good:0,easy:0};
 }
+function setStudyMode(all){
+  studyAllMode=all;
+  const d=document.getElementById('mode-due'), a=document.getElementById('mode-all');
+  if(d)d.classList.toggle('active',!all);
+  if(a)a.classList.toggle('active',all);
+  buildQueue(); renderCard(); updateTopBar();
+}
+function resetStudyMode(){
+  studyAllMode=false;
+  const d=document.getElementById('mode-due'), a=document.getElementById('mode-all');
+  if(d)d.classList.add('active');
+  if(a)a.classList.remove('active');
+}
+function reviewAll(){ showScreen('deck'); setStudyMode(true); }
 function updateTopBar() {
   const now=Date.now(),pool=filteredPool();
   document.getElementById('cnt-new').textContent=pool.filter(c=>!srsData[c.key]).length;
@@ -1126,8 +1170,23 @@ function renderCard() {
   const scene=document.getElementById('card-scene');
   const prog=document.querySelector('.prog-wrap');
   const nav=document.getElementById('nav-bar');
-  if(qIdx>=queue.length){showDone();return;}
-  noC.style.display='none'; scene.style.visibility='visible'; prog.style.visibility='visible';
+  const rating=document.getElementById('rating-area');
+  if(qIdx>=queue.length){
+    const reviewed=sessionStats.again+sessionStats.hard+sessionStats.good+sessionStats.easy;
+    if(reviewed>0){ showDone(); return; } // genuinely finished a session
+    // Opened with an empty queue — show a helpful state instead of "complete"
+    const pool=filteredPool();
+    scene.style.visibility='hidden'; prog.style.visibility='hidden';
+    nav.classList.add('hide'); rating.classList.remove('show');
+    noC.style.display='block';
+    if(pool.length===0){
+      noC.textContent = allCards.length ? 'No cards match the current filters.' : 'This deck has no cards yet — add some in Manage.';
+    } else {
+      noC.innerHTML='Nothing is due in this deck right now.<br><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="reviewAll()">Review all '+pool.length+' card'+(pool.length===1?'':'s')+'</button>';
+    }
+    return;
+  }
+  noC.style.display='none'; noC.innerHTML=''; scene.style.visibility='visible'; prog.style.visibility='visible';
   isFlipped=false;
   document.getElementById('card-inner').classList.remove('flipped');
   document.getElementById('rating-area').classList.remove('show');
