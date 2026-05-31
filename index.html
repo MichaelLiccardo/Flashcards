@@ -912,6 +912,7 @@ let syncTimer=null;
 function scheduleSyncSave(){clearTimeout(syncTimer);syncTimer=setTimeout(syncSave,1500);}
 async function syncSave() {
   if(!sb||!currentUser){pendingSync=!localMode;return;}
+  if(!deckName||!deckName.trim()){return;} // never write a nameless deck (prevents ghost rows)
   setSyncStatus('syncing','syncing…'); pendingSync=false;
   try {
     const{error}=await sb.from('flashcard_progress').upsert({
@@ -990,14 +991,15 @@ async function createDeck() {
 // ── Delete an entire deck (cloud + local) ───────────────────────────────────
 let deckToDelete=null;
 function confirmDeleteDeck(name) {
-  if(!name){ toast('No deck selected.'); return; }
+  if(name===null||name===undefined){ toast('No deck selected.'); return; }
   deckToDelete=name;
-  document.getElementById('deckdel-name').textContent=name;
+  document.getElementById('deckdel-name').textContent=name.trim()?name:'(unnamed deck)';
   document.getElementById('deckdel-modal').classList.add('open');
 }
 function closeDeckDelete(){ document.getElementById('deckdel-modal').classList.remove('open'); deckToDelete=null; }
 async function doDeleteDeck() {
-  const name=deckToDelete; if(!name){ return; }
+  const name=deckToDelete; if(name===null||name===undefined){ return; }
+  clearTimeout(syncTimer); pendingSync=false; // cancel any queued save so it can't recreate the row
   setSyncStatus('syncing','deleting…');
   if(sb&&currentUser){
     try { await sb.from('flashcard_progress').delete().eq('deck_name',name); }
