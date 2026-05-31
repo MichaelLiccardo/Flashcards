@@ -348,7 +348,9 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 
 /* ── Bottom nav ──────────────────────────────────────────────────────────── */
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg2); border-top: 1px solid var(--border); display: flex; justify-content: center; padding: 0.6rem 1rem env(safe-area-inset-bottom); z-index: 50; gap: 2rem; }
-.nav-tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.6rem; color: var(--text3); cursor: pointer; background: none; border: none; font-family: var(--sans); padding: 6px 16px; border-radius: var(--radius-sm); transition: color 0.15s; }
+.nav-tab { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.6rem; color: var(--text3); cursor: pointer; background: none; border: none; font-family: var(--sans); padding: 6px 16px; border-radius: var(--radius-sm); transition: color 0.15s; }
+.nav-badge { position: absolute; top: 0; right: 6px; background: var(--again); color: #fff; font-size: 0.55rem; font-weight: 600; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 99px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.streak-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--hard); background: var(--hard-dim); border: 1px solid rgba(255,170,68,0.3); border-radius: 99px; padding: 4px 12px; }
 .nav-tab .tab-icon { font-size: 1.15rem; }
 .nav-tab:hover { color: var(--text2); }
 .nav-tab.active { color: var(--text); }
@@ -440,6 +442,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <h2>Ready to study?</h2>
       <p>Load a JSON deck or create a new one from scratch.</p>
     </div>
+    <div id="home-streak" class="streak-chip" style="display:none"></div>
 
     <div class="upload-zone" id="upload-zone">
       <input type="file" accept=".json" id="file-input">
@@ -467,6 +470,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <h2>My Decks</h2>
       <p>Pick a deck to study, or load and create new ones.</p>
     </div>
+    <button class="btn btn-primary" style="width:100%" onclick="startReviewAll()">▶ Review all decks together</button>
     <div class="manage-toolbar" style="justify-content:flex-end;width:100%">
       <button class="btn btn-sm" onclick="renderDeckList('decks-list')">↻ Refresh</button>
     </div>
@@ -485,7 +489,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
         <div class="chip chip-due"><span class="chip-dot"></span><span id="cnt-due">0</span> due</div>
         <div class="chip chip-over"><span class="chip-dot"></span><span id="cnt-over">0</span> overdue</div>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="showScreen('home')">✕ Close</button>
+      <button class="btn btn-ghost btn-sm" onclick="leaveStudy()">✕ Close</button>
     </div>
 
     <div class="filter-row" id="filter-row"></div>
@@ -542,7 +546,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <span class="card-counter" id="card-counter">—</span>
       <button class="btn btn-primary btn-sm" onclick="revealCard()">Reveal Answer</button>
     </div>
-    <button class="back-link" onclick="showScreen('home')" style="margin-top:12px">Load a different deck</button>
+    <button class="back-link" onclick="leaveStudy()" style="margin-top:12px">Load a different deck</button>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -551,6 +555,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
   <div id="screen-done">
     <h2>Session complete</h2>
     <p>All due cards reviewed.<br>Come back tomorrow to keep building your memory.</p>
+    <div id="done-streak" class="streak-chip" style="display:none"></div>
     <div class="done-grid">
       <div class="done-stat"><span class="done-val dv-again" id="dn-again">0</span><span class="done-lbl">Again</span></div>
       <div class="done-stat"><span class="done-val dv-hard"  id="dn-hard">0</span><span class="done-lbl">Hard</span></div>
@@ -559,7 +564,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     </div>
     <button class="btn btn-primary" onclick="restartSession()">Review again</button>
     <button class="btn" onclick="reviewAll()">Review all cards</button>
-    <button class="back-link" onclick="showScreen('home')">Load a different deck</button>
+    <button class="back-link" onclick="leaveStudy()">Load a different deck</button>
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════════ -->
@@ -697,8 +702,8 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 //  │  PASTE YOUR TWO VALUES BELOW.                                          │
 //  │  Find them in your Supabase dashboard → Settings → API.                │
 //  └──────────────────────────────────────────────────────────────────────┘
-const SUPABASE_URL = 'https://ehigksjmazhgfburhlzp.supabase.co';   // e.g. https://abcdefgh.supabase.co
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoaWdrc2ptYXpoZ2ZidXJobHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzk1MDEsImV4cCI6MjA5NTY1NTUwMX0.QUdtvmT1v1Anl_seeqfbZZxme3LgNUuUEPa2SbZdZR8'; // e.g. eyJhbGciOiJIUzI1NiI...
+const SUPABASE_URL = 'https://ehigksjmazhgfburhlzp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVoaWdrc2ptYXpoZ2ZidXJobHpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNzk1MDEsImV4cCI6MjA5NTY1NTUwMX0.QUdtvmT1v1Anl_seeqfbZZxme3LgNUuUEPa2SbZdZR8';
 
 function getConfig() {
   const url = SUPABASE_URL.replace(/\/$/, '');
@@ -786,7 +791,7 @@ function showAuthSuccess(msg){const el=document.getElementById('auth-success');e
 
 function continueLocally() {
   localMode=true; currentUser=null;
-  updateHeaderUI(); lsLoadActive();
+  updateHeaderUI(); lsLoadActive(); updateStreakUI(); updateNavBadge();
   document.getElementById('bottom-nav').style.display='flex';
   if(allCards.length) navTo('study'); else showScreen('home');
 }
@@ -803,6 +808,7 @@ function onSignedIn(user) {
   currentUser=user; localMode=false;
   updateHeaderUI();
   document.getElementById('bottom-nav').style.display='flex';
+  updateStreakUI();
   navTo('decks'); // show the cloud deck picker so any device sees its synced decks
 }
 
@@ -857,6 +863,9 @@ let sessionStats={again:0,hard:0,good:0,easy:0};
 let deckName='', activeCats=new Set(), activeDiffs=new Set();
 let editorCardKey=null, pendingSync=false;
 let studyAllMode=false; // false = SRS due-only (default), true = show every card
+let aggregateMode=false; // true = combined review across all decks
+let deckStore={};        // in aggregate mode: deckName -> { cards, srs, dirty }
+const AGG_SEP='\u0000';  // separates deckName from card key in composite keys
 
 // ════════════════════════════════════════════════════════════════════════════
 // LOCALSTORAGE — keyed PER DECK so multiple decks coexist (matches DB schema)
@@ -927,7 +936,9 @@ async function syncLoad(name) {
       if(data.cards_data&&data.cards_data.length>0) allCards=data.cards_data;
       lsSaveAll();
     } else {
-      scheduleSyncSave(); // local is newer — push it up
+      // local copy is newer than the cloud — keep working from local, then push it up
+      if(local){ if(local.cards&&local.cards.length) allCards=local.cards; if(local.srs) srsData=local.srs; }
+      scheduleSyncSave();
     }
     setSyncStatus('synced','synced');
     return true;
@@ -977,6 +988,7 @@ async function loadDeck(cards,name) {
   // The uploaded file is authoritative for card CONTENT; we keep any saved SRS
   // progress (matched by card key) so re-uploading an edited file is non-destructive.
   allCards=cards; deckName=name; srsData={};
+  aggregateMode=false; deckStore={};
   activeCats.clear(); activeDiffs.clear(); resetStudyMode();
   const saved=lsReadDeck(name);
   if(saved&&saved.srs) srsData=saved.srs;
@@ -1006,6 +1018,7 @@ async function createDeck() {
     if(decks.some(d=>d.name===name)){ toast('A deck with that name already exists.'); return; }
   }
   allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
+  aggregateMode=false; deckStore={};
   activeCats.clear(); activeDiffs.clear(); resetStudyMode();
   lsSaveAll(); scheduleSyncSave();
   closeNewDeck();
@@ -1053,15 +1066,23 @@ function showScreen(name) {
     const sec=document.getElementById('home-decks-section');
     if(currentUser){ sec.style.display='flex'; renderDeckList('home-decks-list'); }
     else { sec.style.display='none'; }
+    updateStreakUI();
   }
+  updateNavBadge();
 }
 function navTo(tab) {
-  if(tab==='decks'){ showScreen('decks'); return; }
+  if(tab==='decks'){ if(aggregateMode)exitAggregate(); showScreen('decks'); return; }
   if(tab==='study'){
+    if(aggregateMode){ showScreen('deck'); return; } // already in a combined session
     if(!allCards.length){toast('No cards yet — add some in Manage');navTo('manage');return;}
     buildQueue(); renderCard(); updateTopBar(); showScreen('deck');
-  } else { renderCardList(); showScreen('manage'); }
+  } else { // manage
+    if(aggregateMode){ toast('Open a single deck to manage its cards'); exitAggregate(); showScreen('decks'); return; }
+    renderCardList(); showScreen('manage');
+  }
 }
+// Used by the study screen's Close / "Load a different deck" actions.
+function leaveStudy(){ if(aggregateMode)exitAggregate(); showScreen('home'); }
 
 // ════════════════════════════════════════════════════════════════════════════
 // CLOUD DECK LIBRARY
@@ -1076,6 +1097,13 @@ async function fetchCloudDecks() {
     return data.map(r=>{
       const cards=Array.isArray(r.cards_data)?r.cards_data:[];
       const srs=r.srs_data||{};
+      // Keep the local cache coherent (last-write-wins) so offline use and the nav badge stay accurate.
+      const dn=r.deck_name;
+      if(dn&&dn.trim()){
+        const remoteTime=r.updated_at?new Date(r.updated_at).getTime():0;
+        const local=lsReadDeck(dn); const localTime=local?(local.updatedAt||0):0;
+        if(remoteTime>=localTime){ try{ localStorage.setItem(deckLSKey(dn), JSON.stringify({cards,srs,updatedAt:remoteTime||now})); }catch(e){} }
+      }
       // "Due" = same set the study queue would surface: new cards + cards past their due time.
       let due=0;
       for(const c of cards){
@@ -1106,10 +1134,12 @@ async function renderDeckList(containerId) {
     item.querySelector('.deck-del').addEventListener('click',ev=>{ ev.stopPropagation(); confirmDeleteDeck(d.name); });
     el.appendChild(item);
   });
+  updateNavBadge();
 }
 
 // Load a specific deck from Supabase into the working session.
 async function openCloudDeck(name) {
+  aggregateMode=false; deckStore={};
   allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
   activeCats.clear(); activeDiffs.clear(); resetStudyMode();
   setSyncStatus('syncing','loading…');
@@ -1119,6 +1149,66 @@ async function openCloudDeck(name) {
   buildFilters(); buildQueue(); updateTopBar(); renderCardList();
   if(allCards.length){ renderCard(); showScreen('deck'); }
   else { showScreen('manage'); toast('That deck has no cards yet'); }
+}
+
+// ── Review every deck together (combined cross-deck session) ─────────────────
+async function startReviewAll() {
+  if(!sb||!currentUser){ toast('Sign in to review across decks.'); return; }
+  setSyncStatus('syncing','loading…');
+  let data,error;
+  try { ({data,error}=await sb.from('flashcard_progress').select('deck_name,cards_data,srs_data')); }
+  catch(e){ error=e; }
+  if(error||!data||!data.length){ setSyncStatus('synced','synced'); toast('No decks to review yet.'); return; }
+
+  deckStore={}; allCards=[]; srsData={};
+  data.forEach(r=>{
+    const dn=r.deck_name; if(!dn||!dn.trim()) return; // skip any nameless ghost rows
+    const cards=Array.isArray(r.cards_data)?r.cards_data:[];
+    const srs=r.srs_data||{};
+    deckStore[dn]={cards:cards.map(c=>({...c})), srs:{...srs}, dirty:false};
+    cards.forEach(c=>{
+      const ok=c.key||cardKey(c.q||c.question||'');
+      const ck=dn+AGG_SEP+ok; // composite key keeps identical questions in different decks distinct
+      allCards.push({q:c.q,a:c.a,category:c.category,difficulty:c.difficulty,key:ck,_deck:dn,_okey:ok});
+      if(srs[ok]) srsData[ck]=srs[ok];
+    });
+  });
+
+  aggregateMode=true; deckName=''; queue=[]; qIdx=0;
+  activeCats.clear(); activeDiffs.clear(); resetStudyMode();
+  setSyncStatus('synced','synced');
+  document.getElementById('bottom-nav').style.display='flex';
+  buildFilters(); buildQueue(); updateTopBar();
+  renderCard(); showScreen('deck'); // renderCard shows the "nothing due" prompt if the combined queue is empty
+}
+
+let aggTimer=null;
+function scheduleAggregateSave(){ clearTimeout(aggTimer); aggTimer=setTimeout(saveAggregate,1500); }
+async function saveAggregate() {
+  if(!sb||!currentUser) return;
+  setSyncStatus('syncing','syncing…');
+  let ok=true;
+  for(const dn of Object.keys(deckStore)){
+    const d=deckStore[dn];
+    if(!d.dirty) continue;
+    try {
+      const{error}=await sb.from('flashcard_progress').upsert({
+        user_id:currentUser.id, deck_name:dn, srs_data:d.srs, cards_data:d.cards, updated_at:new Date().toISOString()
+      },{onConflict:'user_id,deck_name'});
+      if(error) throw error;
+      d.dirty=false;
+      try { localStorage.setItem(deckLSKey(dn), JSON.stringify({cards:d.cards, srs:d.srs, updatedAt:Date.now()})); } catch(e){}
+    } catch(e){ ok=false; }
+  }
+  setSyncStatus(ok?'synced':'error', ok?'synced':'sync failed');
+}
+
+// Leave a combined session cleanly so the single-deck flow isn't left with synthetic state.
+function exitAggregate() {
+  clearTimeout(aggTimer);
+  aggregateMode=false; deckStore={};
+  allCards=[]; srsData={}; deckName=''; queue=[]; qIdx=0;
+  activeCats.clear(); activeDiffs.clear();
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1200,6 +1290,7 @@ function renderCard() {
     return;
   }
   noC.style.display='none'; noC.innerHTML=''; scene.style.visibility='visible'; prog.style.visibility='visible';
+  const editBtn=document.querySelector('.card-edit-btn'); if(editBtn) editBtn.style.display=aggregateMode?'none':'';
   isFlipped=false;
   document.getElementById('card-inner').classList.remove('flipped');
   document.getElementById('rating-area').classList.remove('show');
@@ -1245,11 +1336,23 @@ function revealCard(){isFlipped=true;document.getElementById('card-inner').class
 function rate(r){
   const key=queue[qIdx];
   const cd=srsData[key]||{interval:0,ease:DEFAULT_EASE,reps:0,due:0};
-  srsData[key]=sm2(cd,r); sessionStats[r]++;
-  lsSaveAll(); scheduleSyncSave(); qIdx++; updateTopBar(); renderCard();
+  const next=sm2(cd,r);
+  srsData[key]=next; sessionStats[r]++;
+  if(aggregateMode){
+    const c=allCards.find(x=>x.key===key);
+    if(c && deckStore[c._deck]){
+      deckStore[c._deck].srs[c._okey]=next; deckStore[c._deck].dirty=true;
+      // persist this deck locally right away so a rating is never lost if the session ends before sync
+      try { localStorage.setItem(deckLSKey(c._deck), JSON.stringify({cards:deckStore[c._deck].cards, srs:deckStore[c._deck].srs, updatedAt:Date.now()})); } catch(e){}
+    }
+    scheduleAggregateSave();
+  } else {
+    lsSaveAll(); scheduleSyncSave();
+  }
+  qIdx++; recordReviewToday(); updateNavBadge(); updateTopBar(); renderCard();
 }
 function skipCard(){const key=queue.splice(qIdx,1)[0];queue.push(key);renderCard();}
-function showDone(){showScreen('done');['again','hard','good','easy'].forEach(r=>document.getElementById('dn-'+r).textContent=sessionStats[r]);}
+function showDone(){showScreen('done');updateStreakUI();['again','hard','good','easy'].forEach(r=>document.getElementById('dn-'+r).textContent=sessionStats[r]);}
 function restartSession(){showScreen('deck');buildQueue();renderCard();updateTopBar();}
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1286,7 +1389,7 @@ function openCardEditor(key) {
   setTimeout(()=>document.getElementById('ed-question').focus(),100);
 }
 function closeCardEditor(){document.getElementById('editor-modal').classList.remove('open');editorCardKey=null;}
-function editCurrentCard(e){e.stopPropagation();const key=queue[qIdx];if(key)openCardEditor(key);}
+function editCurrentCard(e){e.stopPropagation();if(aggregateMode){toast('Open the deck itself to edit its cards');return;}const key=queue[qIdx];if(key)openCardEditor(key);}
 
 function saveCard() {
   const q=document.getElementById('ed-question').value.trim();
@@ -1382,13 +1485,68 @@ document.addEventListener('keydown',e=>{
   if(!queue.length||qIdx>=queue.length)return;
   if(!isFlipped){if(e.key===' '||e.key==='Enter'){e.preventDefault();revealCard();}return;}
   if(e.key==='1')rate('again'); if(e.key==='2')rate('hard'); if(e.key==='3')rate('good'); if(e.key==='4')rate('easy');
-  if(e.key==='e'){const key=queue[qIdx];if(key)openCardEditor(key);}
+  if(e.key==='e'&&!aggregateMode){const key=queue[qIdx];if(key)openCardEditor(key);}
 });
 
 // ════════════════════════════════════════════════════════════════════════════
 // TOAST
 // ════════════════════════════════════════════════════════════════════════════
 function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),dur);}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DAILY STREAK + NAV DUE BADGE
+// ════════════════════════════════════════════════════════════════════════════
+function dayStr(d){ d=d||new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function readStreak(){ try{ return JSON.parse(localStorage.getItem('fc_streak'))||{}; }catch(e){ return {}; } }
+
+// Streak counts only if the last review was today or yesterday; otherwise it's broken.
+function currentStreak(){
+  const s=readStreak(); if(!s.lastDate) return 0;
+  const today=dayStr(); const y=new Date(); y.setDate(y.getDate()-1);
+  if(s.lastDate===today||s.lastDate===dayStr(y)) return s.count||0;
+  return 0;
+}
+function recordReviewToday(){
+  const s=readStreak(); const today=dayStr();
+  if(s.lastDate===today) return; // already counted today
+  const y=new Date(); y.setDate(y.getDate()-1);
+  s.count = (s.lastDate===dayStr(y)) ? (s.count||0)+1 : 1; // continue if yesterday, else restart
+  s.lastDate=today;
+  try{ localStorage.setItem('fc_streak', JSON.stringify(s)); }catch(e){}
+  updateStreakUI();
+}
+function updateStreakUI(){
+  const n=currentStreak();
+  const txt=n>0 ? '🔥 '+n+'-day streak' : '';
+  const home=document.getElementById('home-streak');
+  if(home){ home.textContent=txt; home.style.display=n>0?'inline-flex':'none'; }
+  const done=document.getElementById('done-streak');
+  if(done){ done.textContent=txt; done.style.display=n>0?'inline-flex':'none'; }
+}
+
+// Total cards due across every locally-cached deck (new + past-due).
+function computeTotalDueLocal(){
+  const now=Date.now(); let total=0;
+  try {
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k||k.indexOf('fc_deck_')!==0) continue;
+      const d=JSON.parse(localStorage.getItem(k));
+      const cards=Array.isArray(d.cards)?d.cards:[]; const srs=d.srs||{};
+      for(const c of cards){ const key=c.key||cardKey(c.q||c.question||''); const s=srs[key]; if(!s||s.due<=now) total++; }
+    }
+  } catch(e){}
+  return total;
+}
+function updateNavBadge(){
+  const tab=document.getElementById('tab-study'); if(!tab) return;
+  let b=document.getElementById('nav-due-badge');
+  const total=computeTotalDueLocal();
+  if(total>0){
+    if(!b){ b=document.createElement('span'); b.id='nav-due-badge'; b.className='nav-badge'; tab.appendChild(b); }
+    b.textContent=total>99?'99+':total; b.style.display='';
+  } else if(b){ b.style.display='none'; }
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // PWA — service worker only (offline caching). No install prompt.
