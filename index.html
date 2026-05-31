@@ -303,6 +303,8 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .nav-bar.hide { display: none; }
 .card-counter { font-size: 0.68rem; color: var(--text3); min-width: 56px; text-align: center; }
 .no-cards-notice { display: none; font-size: 0.82rem; color: var(--text3); text-align: center; padding: 2rem 1rem; width: 100%; }
+.open-deck-label { width: 100%; font-size: 0.82rem; color: var(--text2); display: flex; align-items: center; gap: 7px; margin-bottom: 1.1rem; }
+.open-deck-label .odl-name { color: var(--text); font-weight: 500; font-family: var(--serif); font-style: italic; font-size: 1.05rem; }
 .study-mode-row { display: flex; justify-content: center; width: 100%; margin-bottom: 1.25rem; }
 .mode-seg { display: inline-flex; gap: 4px; background: var(--bg2); border: 1px solid var(--border2); border-radius: 99px; padding: 3px; }
 .mode-opt { padding: 5px 16px; border: none; background: none; color: var(--text2); font-size: 0.7rem; border-radius: 99px; cursor: pointer; font-family: var(--sans); transition: background .15s, color .15s; }
@@ -483,6 +485,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
   <!-- SCREEN: Study                                                       -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <div id="screen-deck">
+    <div class="open-deck-label" id="study-deck-label"></div>
     <div class="deck-topbar">
       <div class="queue-chips">
         <div class="chip chip-new"><span class="chip-dot"></span><span id="cnt-new">0</span> new</div>
@@ -571,15 +574,15 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
   <!-- SCREEN: Manage                                                      -->
   <!-- ════════════════════════════════════════════════════════════════════ -->
   <div id="screen-manage">
+    <div class="open-deck-label" id="manage-deck-label"></div>
     <div class="manage-toolbar">
       <input class="field-input" id="search-input" type="search" placeholder="Search cards…" oninput="renderCardList()" style="flex:1;min-width:140px">
       <button class="btn btn-primary btn-sm" onclick="openCardEditor(null)">＋ Add card</button>
       <button class="btn btn-sm" id="manage-export-btn" onclick="exportDeck()" title="Download as JSON">⬇ Export</button>
       <button class="btn btn-sm btn-danger" id="manage-delete-btn" onclick="confirmDeleteDeck(deckName)" title="Delete this deck">🗑 Delete deck</button>
     </div>
-    <div style="font-size:0.72rem;color:var(--text3);width:100%;display:flex;justify-content:space-between">
+    <div style="font-size:0.72rem;color:var(--text3);width:100%">
       <span id="manage-count">0 cards</span>
-      <span id="manage-deck-name" style="font-family:monospace"></span>
     </div>
     <div class="card-list" id="card-list"></div>
   </div>
@@ -1295,7 +1298,11 @@ function updateTopBar() {
 // ════════════════════════════════════════════════════════════════════════════
 // RENDER CARD
 // ════════════════════════════════════════════════════════════════════════════
+function openDeckText(){ return aggregateMode ? 'All decks' : (deckName || '—'); }
+function setDeckLabel(id){ const el=document.getElementById(id); if(el){ el.innerHTML='<span aria-hidden="true">📚</span> <span class="odl-name">'+escHtml(openDeckText())+'</span>'; } }
+
 function renderCard() {
+  setDeckLabel('study-deck-label');
   const noC=document.getElementById('no-cards');
   const scene=document.getElementById('card-scene');
   const prog=document.querySelector('.prog-wrap');
@@ -1392,7 +1399,7 @@ function renderCardList() {
   const exp=document.getElementById('manage-export-btn'), del=document.getElementById('manage-delete-btn');
   if(exp) exp.style.display=noDeck?'none':'';
   if(del) del.style.display=noDeck?'none':'';
-  document.getElementById('manage-deck-name').textContent=deckName||'';
+  setDeckLabel('manage-deck-label');
   if(noDeck){
     document.getElementById('manage-count').textContent='No deck open';
     list.innerHTML='<div class="empty-state">No deck is open.<br>Hit <strong>＋ Add card</strong> to choose or create a deck.</div>';
