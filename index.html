@@ -574,8 +574,8 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     <div class="manage-toolbar">
       <input class="field-input" id="search-input" type="search" placeholder="Search cards…" oninput="renderCardList()" style="flex:1;min-width:140px">
       <button class="btn btn-primary btn-sm" onclick="openCardEditor(null)">＋ Add card</button>
-      <button class="btn btn-sm" onclick="exportDeck()" title="Download as JSON">⬇ Export</button>
-      <button class="btn btn-sm btn-danger" onclick="confirmDeleteDeck(deckName)" title="Delete this deck">🗑 Delete deck</button>
+      <button class="btn btn-sm" id="manage-export-btn" onclick="exportDeck()" title="Download as JSON">⬇ Export</button>
+      <button class="btn btn-sm btn-danger" id="manage-delete-btn" onclick="confirmDeleteDeck(deckName)" title="Delete this deck">🗑 Delete deck</button>
     </div>
     <div style="font-size:0.72rem;color:var(--text3);width:100%;display:flex;justify-content:space-between">
       <span id="manage-count">0 cards</span>
@@ -686,6 +686,33 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <div class="modal-footer-right">
         <button class="btn btn-sm" onclick="closeDeckDelete()">Cancel</button>
         <button class="btn btn-danger btn-sm" onclick="doDeleteDeck()">Delete deck</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Choose destination deck (shown when adding a card with no deck open) -->
+<div class="modal-overlay" id="deckpick-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Add card to which deck?</span>
+      <button class="modal-close" onclick="closeDeckPick()">✕</button>
+    </div>
+    <p style="font-size:0.78rem;color:var(--text2);line-height:1.6">A card has to belong to a deck. Pick an existing deck or create a new one.</p>
+    <div class="modal-field" id="deckpick-existing-field">
+      <label class="field-label">Existing deck</label>
+      <select class="field-input" id="deckpick-select"></select>
+    </div>
+    <div class="modal-field" id="deckpick-new-field" style="display:none">
+      <label class="field-label">New deck name</label>
+      <input class="field-input" id="deckpick-newname" placeholder="e.g. Spanish Vocabulary" maxlength="100">
+    </div>
+    <button class="btn btn-ghost btn-sm" id="deckpick-toggle" style="align-self:flex-start" onclick="toggleDeckPickNew()">＋ Create new deck instead</button>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-right">
+        <button class="btn btn-sm" onclick="closeDeckPick()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmDeckPick()">Continue</button>
       </div>
     </div>
   </div>
@@ -1360,11 +1387,21 @@ function restartSession(){showScreen('deck');buildQueue();renderCard();updateTop
 // ════════════════════════════════════════════════════════════════════════════
 function renderCardList() {
   const list=document.getElementById('card-list');
+  const noDeck=!deckName;
+  // Export/Delete only make sense with a deck open.
+  const exp=document.getElementById('manage-export-btn'), del=document.getElementById('manage-delete-btn');
+  if(exp) exp.style.display=noDeck?'none':'';
+  if(del) del.style.display=noDeck?'none':'';
+  document.getElementById('manage-deck-name').textContent=deckName||'';
+  if(noDeck){
+    document.getElementById('manage-count').textContent='No deck open';
+    list.innerHTML='<div class="empty-state">No deck is open.<br>Hit <strong>＋ Add card</strong> to choose or create a deck.</div>';
+    return;
+  }
   const si=document.getElementById('search-input');
   const search=(si&&si.value?si.value:'').toLowerCase();
   const visible=allCards.filter(c=>!search||c.q.toLowerCase().includes(search)||c.a.toLowerCase().includes(search)||(c.category||'').toLowerCase().includes(search));
   document.getElementById('manage-count').textContent=allCards.length+' card'+(allCards.length===1?'':'s');
-  document.getElementById('manage-deck-name').textContent=deckName||'';
   if(!visible.length){list.innerHTML=`<div class="empty-state">${allCards.length?'No cards match your search.':'No cards yet.<br>Hit <strong>＋ Add card</strong> to get started.'}</div>`;return;}
   list.innerHTML='';
   visible.forEach(c=>{
@@ -1378,7 +1415,73 @@ function renderCardList() {
 }
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
+// ── Destination-deck picker (for adding a card when no deck is open) ─────────
+async function listDeckNames(){
+  if(currentUser){ const d=await fetchCloudDecks(); return d.map(x=>x.name).filter(n=>n&&n.trim()); }
+  const names=[];
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.indexOf('fc_deck_')===0){ try{ names.push(decodeURIComponent(k.slice('fc_deck_'.length))); }catch(e){} }
+    }
+  }catch(e){}
+  return names.filter(n=>n&&n.trim());
+}
+let deckPickNewMode=false;
+async function openDeckPick(){
+  deckPickNewMode=false;
+  const sel=document.getElementById('deckpick-select');
+  sel.innerHTML='<option>Loading…</option>';
+  document.getElementById('deckpick-modal').classList.add('open');
+  const names=await listDeckNames();
+  sel.innerHTML='';
+  names.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  const hasDecks=names.length>0;
+  document.getElementById('deckpick-existing-field').style.display=hasDecks?'flex':'none';
+  document.getElementById('deckpick-toggle').style.display=hasDecks?'block':'none';
+  if(!hasDecks){ deckPickNewMode=true; document.getElementById('deckpick-new-field').style.display='flex'; document.getElementById('deckpick-newname').value=''; }
+  else { document.getElementById('deckpick-new-field').style.display='none'; }
+}
+function closeDeckPick(){ document.getElementById('deckpick-modal').classList.remove('open'); }
+function toggleDeckPickNew(){
+  deckPickNewMode=!deckPickNewMode;
+  document.getElementById('deckpick-existing-field').style.display=deckPickNewMode?'none':'flex';
+  document.getElementById('deckpick-new-field').style.display=deckPickNewMode?'flex':'none';
+  document.getElementById('deckpick-toggle').textContent=deckPickNewMode?'← Choose an existing deck':'＋ Create new deck instead';
+  if(deckPickNewMode) setTimeout(()=>document.getElementById('deckpick-newname').focus(),50);
+}
+async function confirmDeckPick(){
+  if(deckPickNewMode){
+    const name=document.getElementById('deckpick-newname').value.trim();
+    if(!name){ toast('Please enter a deck name.'); return; }
+    if(lsReadDeck(name)){ toast('A deck with that name already exists.'); return; }
+    if(currentUser){ const decks=await fetchCloudDecks(); if(decks.some(d=>d.name===name)){ toast('A deck with that name already exists.'); return; } }
+    aggregateMode=false; deckStore={};
+    allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
+    activeCats.clear(); activeDiffs.clear(); resetStudyMode();
+    lsSaveAll(); scheduleSyncSave();
+    buildFilters(); updateTopBar();
+  } else {
+    const name=document.getElementById('deckpick-select').value;
+    if(!name){ toast('Pick a deck.'); return; }
+    if(currentUser){ await openCloudDeck(name); }
+    else {
+      aggregateMode=false; deckStore={};
+      const d=lsReadDeck(name)||{cards:[],srs:{}};
+      allCards=d.cards||[]; srsData=d.srs||{}; deckName=name; queue=[]; qIdx=0;
+      activeCats.clear(); activeDiffs.clear(); resetStudyMode();
+      buildFilters(); buildQueue(); updateTopBar();
+    }
+  }
+  closeDeckPick();
+  document.getElementById('bottom-nav').style.display='flex';
+  renderCardList(); showScreen('manage');
+  openCardEditor(null); // deckName is now set, so this opens the card editor directly
+}
+
 function openCardEditor(key) {
+  // A new card needs a deck to live in — if none is open, choose/create one first.
+  if(key===null && !deckName){ openDeckPick(); return; }
   editorCardKey=key;
   const isNew=key===null;
   document.getElementById('editor-title').textContent=isNew?'Add card':'Edit card';
@@ -1478,6 +1581,11 @@ document.addEventListener('keydown',e=>{
   }
   if(document.getElementById('deckdel-modal').classList.contains('open')){
     if(e.key==='Escape')closeDeckDelete();
+    return;
+  }
+  if(document.getElementById('deckpick-modal').classList.contains('open')){
+    if(e.key==='Escape')closeDeckPick();
+    if(e.key==='Enter'&&document.activeElement.id==='deckpick-newname'){e.preventDefault();confirmDeckPick();}
     return;
   }
   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;
