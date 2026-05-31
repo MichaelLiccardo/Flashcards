@@ -357,6 +357,9 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .deck-item-name { font-size: 0.92rem; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .deck-item-meta { font-size: 0.68rem; color: var(--text3); }
 .deck-item-go { font-size: 0.75rem; color: var(--text2); flex-shrink: 0; }
+.deck-item-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.deck-del { color: var(--text3); }
+.deck-del:hover { color: var(--again); border-color: var(--again); }
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg3); border: 1px solid var(--border2); border-radius: 99px; padding: 8px 18px; font-size: 0.75rem; color: var(--text2); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; white-space: nowrap; }
@@ -555,6 +558,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <input class="field-input" id="search-input" type="search" placeholder="Search cards…" oninput="renderCardList()" style="flex:1;min-width:140px">
       <button class="btn btn-primary btn-sm" onclick="openCardEditor(null)">＋ Add card</button>
       <button class="btn btn-sm" onclick="exportDeck()" title="Download as JSON">⬇ Export</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteDeck(deckName)" title="Delete this deck">🗑 Delete deck</button>
     </div>
     <div style="font-size:0.72rem;color:var(--text3);width:100%;display:flex;justify-content:space-between">
       <span id="manage-count">0 cards</span>
@@ -624,6 +628,47 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <div class="modal-footer-right">
         <button class="btn btn-sm" onclick="closeConfirm()">Cancel</button>
         <button class="btn btn-danger btn-sm" onclick="doDeleteCard()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Name new deck modal -->
+<div class="modal-overlay" id="newdeck-modal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Name your deck</span>
+      <button class="modal-close" onclick="closeNewDeck()">✕</button>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Deck name</label>
+      <input class="field-input" id="nd-name" placeholder="e.g. Spanish Vocabulary" maxlength="100">
+    </div>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-right">
+        <button class="btn btn-sm" onclick="closeNewDeck()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="createDeck()">Create deck</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete deck modal -->
+<div class="modal-overlay" id="deckdel-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">Delete deck?</span>
+      <button class="modal-close" onclick="closeDeckDelete()">✕</button>
+    </div>
+    <p style="font-size:0.85rem;color:var(--text2);line-height:1.6">
+      Delete “<span id="deckdel-name" style="color:var(--text)"></span>” and all of its cards and progress, on every device? This cannot be undone.
+    </p>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-right">
+        <button class="btn btn-sm" onclick="closeDeckDelete()">Cancel</button>
+        <button class="btn btn-danger btn-sm" onclick="doDeleteDeck()">Delete deck</button>
       </div>
     </div>
   </div>
@@ -918,11 +963,53 @@ async function loadDeck(cards,name) {
 }
 
 function newDeck() {
-  allCards=[]; srsData={}; deckName='My Deck';
+  document.getElementById('nd-name').value='';
+  document.getElementById('newdeck-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('nd-name').focus(),100);
+}
+function closeNewDeck(){ document.getElementById('newdeck-modal').classList.remove('open'); }
+
+async function createDeck() {
+  const name=document.getElementById('nd-name').value.trim();
+  if(!name){ toast('Please enter a deck name.'); return; }
+  // Guard against overwriting an existing deck of the same name (local or cloud).
+  if(lsReadDeck(name)){ toast('A deck with that name already exists.'); return; }
+  if(currentUser){
+    const decks=await fetchCloudDecks();
+    if(decks.some(d=>d.name===name)){ toast('A deck with that name already exists.'); return; }
+  }
+  allCards=[]; srsData={}; deckName=name; queue=[]; qIdx=0;
   activeCats.clear(); activeDiffs.clear();
-  lsSaveAll();
+  lsSaveAll(); scheduleSyncSave();
+  closeNewDeck();
   document.getElementById('bottom-nav').style.display='flex';
   navTo('manage'); renderCardList();
+  toast('Deck “'+name+'” created');
+}
+
+// ── Delete an entire deck (cloud + local) ───────────────────────────────────
+let deckToDelete=null;
+function confirmDeleteDeck(name) {
+  if(!name){ toast('No deck selected.'); return; }
+  deckToDelete=name;
+  document.getElementById('deckdel-name').textContent=name;
+  document.getElementById('deckdel-modal').classList.add('open');
+}
+function closeDeckDelete(){ document.getElementById('deckdel-modal').classList.remove('open'); deckToDelete=null; }
+async function doDeleteDeck() {
+  const name=deckToDelete; if(!name){ return; }
+  setSyncStatus('syncing','deleting…');
+  if(sb&&currentUser){
+    try { await sb.from('flashcard_progress').delete().eq('deck_name',name); }
+    catch(e){ /* network error — local delete still proceeds */ }
+  }
+  try { localStorage.removeItem(deckLSKey(name)); } catch(e){}
+  try { if(localStorage.getItem(LS_ACTIVE)===name) localStorage.removeItem(LS_ACTIVE); } catch(e){}
+  if(deckName===name){ allCards=[]; srsData={}; deckName=''; queue=[]; qIdx=0; activeCats.clear(); activeDiffs.clear(); }
+  if(currentUser) setSyncStatus('synced','synced'); else setSyncStatus('','');
+  closeDeckDelete();
+  toast('Deck deleted');
+  navTo('decks'); // back to the library, which re-renders
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -973,8 +1060,9 @@ async function renderDeckList(containerId) {
     const item=document.createElement('div'); item.className='deck-item';
     const when=d.updated?new Date(d.updated).toLocaleDateString():'';
     const isCurrent=d.name===deckName;
-    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><span class="deck-item-go">Open →</span>`;
+    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><div class="deck-item-actions"><button class="btn btn-sm btn-icon deck-del" title="Delete deck" aria-label="Delete deck">🗑</button><span class="deck-item-go">Open →</span></div>`;
     item.onclick=()=>openCloudDeck(d.name);
+    item.querySelector('.deck-del').addEventListener('click',ev=>{ ev.stopPropagation(); confirmDeleteDeck(d.name); });
     el.appendChild(item);
   });
 }
@@ -1202,6 +1290,15 @@ document.addEventListener('keydown',e=>{
   }
   if(document.getElementById('confirm-modal').classList.contains('open')){
     if(e.key==='Escape')closeConfirm();
+    return;
+  }
+  if(document.getElementById('newdeck-modal').classList.contains('open')){
+    if(e.key==='Escape')closeNewDeck();
+    if(e.key==='Enter'&&document.activeElement.id==='nd-name'){e.preventDefault();createDeck();}
+    return;
+  }
+  if(document.getElementById('deckdel-modal').classList.contains('open')){
+    if(e.key==='Escape')closeDeckDelete();
     return;
   }
   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;
