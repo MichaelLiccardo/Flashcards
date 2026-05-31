@@ -834,6 +834,19 @@ function sm2(card,rating) {
 }
 function previewIntervals(card){return Object.fromEntries(['again','hard','good','easy'].map(r=>[r,sm2(card,r).interval]));}
 function fmtDays(d){if(!d||d<1)return'<1d';if(d===1)return'1d';if(d<30)return d+'d';if(d<365)return Math.round(d/30)+'mo';return(d/365).toFixed(1)+'yr';}
+// Human-friendly "when is this card next due" for All-cards mode.
+function fmtDue(key){
+  const s=srsData[key];
+  if(!s) return 'New card · not yet scheduled';
+  const now=Date.now();
+  if(s.due<=now) return 'Due now';
+  const days=Math.ceil((s.due-now)/864e5);
+  if(days===1) return 'Due tomorrow';
+  if(days<30)  return 'Due in '+days+' days';
+  if(days<365) return 'Due in '+Math.round(days/30)+' month'+(Math.round(days/30)===1?'':'s');
+  const yrs=(days/365).toFixed(1);
+  return 'Due in '+yrs+' year'+(yrs==='1.0'?'':'s');
+}
 function cardKey(q){try{return btoa(encodeURIComponent(q)).slice(0,40);}catch(e){return q.slice(0,40);}}
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -1207,7 +1220,9 @@ function renderCard() {
   const badges=makeBadges(c);
   document.getElementById('badges-f').innerHTML=badges;
   document.getElementById('badges-b').innerHTML=badges;
-  document.getElementById('card-interval').textContent=srsData[key]?'Interval: '+fmtDays(srsData[key].interval):'First time seeing this card';
+  document.getElementById('card-interval').textContent = studyAllMode
+    ? fmtDue(key)
+    : (srsData[key]?'Interval: '+fmtDays(srsData[key].interval):'First time seeing this card');
   document.getElementById('ri-again').textContent=fmtDays(pv.again);
   document.getElementById('ri-hard').textContent=fmtDays(pv.hard);
   document.getElementById('ri-good').textContent=fmtDays(pv.good);
