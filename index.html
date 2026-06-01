@@ -280,9 +280,11 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .cbadge.medium { color: var(--hard);  border-color: var(--hard); }
 .cbadge.hard   { color: var(--again); border-color: var(--again); }
 .card-interval { font-size: 0.62rem; color: var(--text3); margin-top: 2px; }
-.card-links { display: none; flex-direction: column; gap: 4px; margin-top: 0.5rem; max-width: 100%; align-items: center; }
-.card-links a { font-size: 0.72rem; color: var(--easy); text-decoration: none; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-links a:hover { text-decoration: underline; }
+.card-links { display: none; flex-wrap: wrap; gap: 6px; margin-top: 0.85rem; justify-content: center; max-width: 100%; }
+.card-links a { display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; color: var(--text2); text-decoration: none; background: var(--bg3); border: 1px solid var(--border2); padding: 4px 11px; border-radius: 99px; max-width: 220px; transition: background .15s, border-color .15s, color .15s; }
+.card-links a:hover { background: var(--bg4); border-color: var(--easy); color: var(--easy); }
+.card-links a .lk-ico { font-size: 0.78rem; opacity: .7; flex-shrink: 0; }
+.card-links a .lk-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-ribbon { position:absolute; top:14px; right:14px; font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:99px; border:1px solid var(--border2); color:var(--text3); }
 .card-ribbon.ribbon-new { color:var(--easy);  border-color:var(--easy); }
 .card-ribbon.ribbon-due { color:var(--good);  border-color:var(--good); }
@@ -1243,7 +1245,7 @@ async function startReviewAll() {
     cards.forEach(c=>{
       const ok=c.key||cardKey(c.q||c.question||'');
       const ck=dn+AGG_SEP+ok; // composite key keeps identical questions in different decks distinct
-      allCards.push({q:c.q,a:c.a,category:c.category,difficulty:c.difficulty,key:ck,_deck:dn,_okey:ok});
+      allCards.push({q:c.q,a:c.a,category:c.category,difficulty:c.difficulty,links:c.links,key:ck,_deck:dn,_okey:ok});
       if(srs[ok]) srsData[ck]=srs[ok];
     });
   });
@@ -1424,12 +1426,16 @@ function normalizeLinksArray(arr){
   });
   return out;
 }
+function linkDisplay(l){
+  if(l.label) return l.label;
+  try{ const u=new URL(l.url); return u.hostname.replace(/^www\./,''); }catch(e){ return l.url; }
+}
 function renderCardLinks(c){
   const el=document.getElementById('card-links');
   const links=(c.links||[]).filter(l=>l&&/^https?:\/\//i.test(l.url||''));
   if(!links.length){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='flex';
-  el.innerHTML=links.map(l=>'<a href="'+escHtml(l.url)+'" target="_blank" rel="noopener noreferrer">🔗 '+escHtml(l.label||l.url)+'</a>').join('');
+  el.innerHTML=links.map(l=>'<a href="'+escHtml(l.url)+'" target="_blank" rel="noopener noreferrer" title="'+escHtml(l.url)+'"><span class="lk-ico" aria-hidden="true">↗</span><span class="lk-text">'+escHtml(linkDisplay(l))+'</span></a>').join('');
 }
 function updateProgress(){
   const total=queue.length,s=sessionStats,pct=n=>total?(n/total*100).toFixed(1)+'%':'0%';
