@@ -370,6 +370,26 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .deck-del { color: var(--text3); }
 .deck-del:hover { color: var(--again); border-color: var(--again); }
 
+/* ── Stats dashboard ─────────────────────────────────────────────────────── */
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem 1.4rem; width: 100%; margin-bottom: 1rem; }
+.stat-card h3 { font-family: var(--serif); font-style: italic; font-weight: normal; font-size: 1.1rem; margin-bottom: 0.9rem; }
+.stat-row { display: flex; gap: 1rem; width: 100%; }
+.stat-big { display: flex; flex-direction: column; gap: 2px; align-items: center; flex: 1; }
+.stat-big .v { font-family: var(--serif); font-style: italic; font-size: 1.9rem; line-height: 1; }
+.stat-big .l { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); }
+.maturity-bar { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--bg4); margin-bottom: 0.7rem; }
+.legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.7rem; color: var(--text2); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.cols { display: flex; align-items: flex-end; gap: 3px; height: 90px; width: 100%; }
+.col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; }
+.col .bar { width: 100%; background: var(--text2); border-radius: 3px 3px 0 0; }
+.col .clab { font-size: 0.5rem; color: var(--text3); }
+.retention-big { font-family: var(--serif); font-style: italic; font-size: 2.6rem; line-height: 1; }
+.muted { font-size: 0.73rem; color: var(--text3); line-height: 1.55; }
+.deck-stats-btn { color: var(--text3); }
+.deck-stats-btn:hover { color: var(--easy); border-color: var(--easy); }
+
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg3); border: 1px solid var(--border2); border-radius: 99px; padding: 8px 18px; font-size: 0.75rem; color: var(--text2); opacity: 0; transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; white-space: nowrap; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -474,6 +494,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
     </div>
     <button class="btn btn-primary" style="width:100%" onclick="startReviewAll()">▶ Review all decks together</button>
     <div class="manage-toolbar" style="justify-content:flex-end;width:100%">
+      <button class="btn btn-sm" onclick="openAllStats()">📊 All-deck stats</button>
       <button class="btn btn-sm" onclick="renderDeckList('decks-list')">↻ Refresh</button>
     </div>
     <div class="deck-list" id="decks-list"></div>
@@ -579,12 +600,24 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <input class="field-input" id="search-input" type="search" placeholder="Search cards…" oninput="renderCardList()" style="flex:1;min-width:140px">
       <button class="btn btn-primary btn-sm" onclick="openCardEditor(null)">＋ Add card</button>
       <button class="btn btn-sm" id="manage-export-btn" onclick="exportDeck()" title="Download as JSON">⬇ Export</button>
+      <button class="btn btn-sm" id="manage-stats-btn" onclick="openStats(deckName)" title="Deck statistics">📊 Stats</button>
       <button class="btn btn-sm btn-danger" id="manage-delete-btn" onclick="confirmDeleteDeck(deckName)" title="Delete this deck">🗑 Delete deck</button>
     </div>
     <div style="font-size:0.72rem;color:var(--text3);width:100%">
       <span id="manage-count">0 cards</span>
     </div>
     <div class="card-list" id="card-list"></div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SCREEN: Stats                                                       -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div id="screen-stats">
+    <div class="open-deck-label" id="stats-deck-label"></div>
+    <div class="manage-toolbar" style="justify-content:flex-end;width:100%">
+      <button class="btn btn-sm" onclick="backFromStats()">← Back</button>
+    </div>
+    <div id="stats-body" style="width:100%"></div>
   </div>
 </div><!-- /app -->
 
@@ -1086,7 +1119,7 @@ async function doDeleteDeck() {
 // ════════════════════════════════════════════════════════════════════════════
 // SCREENS
 // ════════════════════════════════════════════════════════════════════════════
-const SCREENS=['loading','auth','home','decks','deck','done','manage'];
+const SCREENS=['loading','auth','home','decks','deck','done','manage','stats'];
 function showScreen(name) {
   SCREENS.forEach(s=>{const el=document.getElementById('screen-'+s);if(!el)return;el.style.display=s===name?'flex':'none';if(s===name)el.style.flexDirection='column';});
   ['decks','study','manage'].forEach(t=>{const el=document.getElementById('tab-'+t);if(el)el.classList.toggle('active',(t==='decks'&&name==='decks')||(t==='study'&&(name==='deck'||name==='done'))||(t==='manage'&&name==='manage'));});
@@ -1159,8 +1192,9 @@ async function renderDeckList(containerId) {
     const when=d.updated?new Date(d.updated).toLocaleDateString():'';
     const isCurrent=d.name===deckName;
     const badge=d.due>0?`<span class="due-badge" title="${d.due} card${d.due===1?'':'s'} due">${d.due>99?'99+':d.due}</span>`:'';
-    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><div class="deck-item-actions">${badge}<button class="btn btn-sm btn-icon deck-del" title="Delete deck" aria-label="Delete deck">🗑</button><span class="deck-item-go">Open →</span></div>`;
+    item.innerHTML=`<div class="deck-item-main"><div class="deck-item-name">${escHtml(d.name)}${isCurrent?' ·  open':''}</div><div class="deck-item-meta">${d.count} card${d.count===1?'':'s'}${when?' · updated '+when:''}</div></div><div class="deck-item-actions">${badge}<button class="btn btn-sm btn-icon deck-stats-btn" title="Stats" aria-label="Deck stats">📊</button><button class="btn btn-sm btn-icon deck-del" title="Delete deck" aria-label="Delete deck">🗑</button><span class="deck-item-go">Open →</span></div>`;
     item.onclick=()=>openCloudDeck(d.name);
+    item.querySelector('.deck-stats-btn').addEventListener('click',ev=>{ ev.stopPropagation(); openStats(d.name); });
     item.querySelector('.deck-del').addEventListener('click',ev=>{ ev.stopPropagation(); confirmDeleteDeck(d.name); });
     el.appendChild(item);
   });
@@ -1379,8 +1413,10 @@ function rate(r){
       // persist this deck locally right away so a rating is never lost if the session ends before sync
       try { localStorage.setItem(deckLSKey(c._deck), JSON.stringify({cards:deckStore[c._deck].cards, srs:deckStore[c._deck].srs, updatedAt:Date.now()})); } catch(e){}
     }
+    logReview(r, c?c._deck:'');
     scheduleAggregateSave();
   } else {
+    logReview(r, deckName);
     lsSaveAll(); scheduleSyncSave();
   }
   qIdx++; recordReviewToday(); updateNavBadge(); updateTopBar(); renderCard();
@@ -1397,8 +1433,10 @@ function renderCardList() {
   const noDeck=!deckName;
   // Export/Delete only make sense with a deck open.
   const exp=document.getElementById('manage-export-btn'), del=document.getElementById('manage-delete-btn');
+  const sbtn=document.getElementById('manage-stats-btn');
   if(exp) exp.style.display=noDeck?'none':'';
   if(del) del.style.display=noDeck?'none':'';
+  if(sbtn) sbtn.style.display=noDeck?'none':'';
   setDeckLabel('manage-deck-label');
   if(noDeck){
     document.getElementById('manage-count').textContent='No deck open';
@@ -1662,6 +1700,128 @@ function updateNavBadge(){
     b.textContent=total>99?'99+':total; b.style.display='';
   } else if(b){ b.style.display='none'; }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// REVIEW LOG + STATS
+// ════════════════════════════════════════════════════════════════════════════
+function readReviewLog(){ try{ return JSON.parse(localStorage.getItem('fc_reviewlog'))||[]; }catch(e){ return []; } }
+function logReview(rating, deck){
+  const log=readReviewLog();
+  log.push({t:Date.now(), r:rating, d:deck||''});
+  const cutoff=Date.now()-200*864e5;             // keep ~200 days
+  let pruned=log.filter(e=>e.t>=cutoff);
+  if(pruned.length>5000) pruned=pruned.slice(pruned.length-5000); // hard cap
+  try{ localStorage.setItem('fc_reviewlog', JSON.stringify(pruned)); }catch(e){}
+}
+
+// Maturity + due forecast straight from SRS state (works retroactively, cross-device).
+function deckStats(cards, srs){
+  const now=Date.now();
+  let nw=0, learning=0, mature=0, dueNow=0; const forecast={};
+  (cards||[]).forEach(c=>{
+    const key=c.key||cardKey(c.q||c.question||'');
+    const s=srs[key];
+    if(!s){ nw++; dueNow++; return; }
+    if(s.interval>=21) mature++; else learning++;
+    if(s.due<=now){ dueNow++; }
+    else { const off=Math.ceil((s.due-now)/864e5); if(off>=1&&off<=14) forecast[off]=(forecast[off]||0)+1; }
+  });
+  return {total:(cards||[]).length, nw, learning, mature, dueNow, forecast};
+}
+
+// Retention + recent activity from the review log (per-device, going forward).
+function logStats(deckFilter){
+  const log=readReviewLog().filter(e=>!deckFilter||e.d===deckFilter);
+  let again=0,hard=0,good=0,easy=0;
+  log.forEach(e=>{ if(e.r==='again')again++; else if(e.r==='hard')hard++; else if(e.r==='good')good++; else if(e.r==='easy')easy++; });
+  const total=again+hard+good+easy;
+  const retention=total?Math.round(((good+easy)/total)*100):null;
+  const days=[]; const now=new Date();
+  for(let i=13;i>=0;i--){ const d=new Date(now); d.setDate(d.getDate()-i); days.push({key:dayStr(d), num:d.getDate(), count:0}); }
+  const idx={}; days.forEach((o,i)=>idx[o.key]=i);
+  log.forEach(e=>{ const k=dayStr(new Date(e.t)); if(k in idx) days[idx[k]].count++; });
+  return {again,hard,good,easy,total,retention,days};
+}
+
+async function getDeckData(name){
+  if(!aggregateMode && name===deckName && allCards.length){ return {cards:allCards, srs:srsData}; }
+  const local=lsReadDeck(name);
+  if(local) return {cards:local.cards||[], srs:local.srs||{}};
+  if(sb&&currentUser){
+    try{ const{data}=await sb.from('flashcard_progress').select('cards_data,srs_data').eq('deck_name',name).maybeSingle(); if(data) return {cards:data.cards_data||[], srs:data.srs_data||{}}; }catch(e){}
+  }
+  return {cards:[], srs:{}};
+}
+async function getAllData(){
+  if(currentUser){ await fetchCloudDecks(); } // refreshes local caches first
+  const cards=[]; const srs={};
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i); if(!k||k.indexOf('fc_deck_')!==0) continue;
+      const d=JSON.parse(localStorage.getItem(k));
+      (d.cards||[]).forEach(c=>{
+        const okey=c.key||cardKey(c.q||c.question||'');
+        const comp=okey+'\u0000'+k;
+        cards.push({...c,key:comp});
+        if(d.srs&&d.srs[okey]) srs[comp]=d.srs[okey];
+      });
+    }
+  }catch(e){}
+  return {cards, srs};
+}
+
+function statBig(v,l){ return '<div class="stat-big"><span class="v">'+v+'</span><span class="l">'+escHtml(l)+'</span></div>'; }
+function colChart(data,max){
+  let h='<div class="cols">';
+  data.forEach(d=>{ const ht=d.v>0?Math.max(2,Math.round(d.v/max*80)):0; h+='<div class="col"><div class="bar" style="height:'+ht+'px" title="'+d.v+'"></div><div class="clab">'+escHtml(d.label)+'</div></div>'; });
+  return h+'</div>';
+}
+function renderStatsInto(title, cards, srs, deckFilter){
+  const lbl=document.getElementById('stats-deck-label');
+  lbl.innerHTML='<span aria-hidden="true">📊</span> <span class="odl-name">'+escHtml(title)+'</span>';
+  const ds=deckStats(cards,srs), ls=logStats(deckFilter);
+  const tot=ds.total||1;
+  let html='';
+  html+='<div class="stat-card"><div class="stat-row">'+statBig(ds.total,'Cards')+statBig(ds.dueNow,'Due now')+statBig(ds.mature,'Mature')+'</div></div>';
+  html+='<div class="stat-card"><h3>Card maturity</h3><div class="maturity-bar">'
+    +'<div style="background:var(--easy);width:'+(ds.nw/tot*100)+'%"></div>'
+    +'<div style="background:var(--hard);width:'+(ds.learning/tot*100)+'%"></div>'
+    +'<div style="background:var(--good);width:'+(ds.mature/tot*100)+'%"></div></div>'
+    +'<div class="legend"><span><i style="background:var(--easy)"></i>New · '+ds.nw+'</span>'
+    +'<span><i style="background:var(--hard)"></i>Learning · '+ds.learning+'</span>'
+    +'<span><i style="background:var(--good)"></i>Mature · '+ds.mature+'</span></div>'
+    +'<p class="muted" style="margin-top:0.6rem">“Mature” means an interval of 21 days or more.</p></div>';
+  if(ls.total>0){
+    html+='<div class="stat-card"><h3>Retention</h3><div class="stat-row" style="align-items:center;gap:1.4rem">'
+      +'<div class="retention-big" style="color:var(--good)">'+ls.retention+'%</div>'
+      +'<div class="muted">Good or Easy on '+(ls.good+ls.easy)+' of '+ls.total+' reviews.<br>'
+      +'Again '+ls.again+' · Hard '+ls.hard+' · Good '+ls.good+' · Easy '+ls.easy+'</div></div></div>';
+  } else {
+    html+='<div class="stat-card"><h3>Retention</h3><p class="muted">No reviews logged yet. Study some cards and your pass rate appears here. (Tracked on this device going forward.)</p></div>';
+  }
+  const actMax=Math.max(1,...ls.days.map(d=>d.count));
+  html+='<div class="stat-card"><h3>Reviews · last 14 days</h3>'+colChart(ls.days.map(d=>({v:d.count,label:String(d.num)})),actMax)+'</div>';
+  const fcData=[{v:ds.dueNow,label:'now'}]; for(let i=1;i<=13;i++) fcData.push({v:(ds.forecast[i]||0),label:String(i)});
+  const fcMax=Math.max(1,...fcData.map(x=>x.v));
+  html+='<div class="stat-card"><h3>Upcoming · next 14 days</h3>'+colChart(fcData,fcMax)+'<p class="muted" style="margin-top:0.4rem">Cards coming due each day (“now” includes new + overdue).</p></div>';
+  document.getElementById('stats-body').innerHTML=html;
+}
+async function openStats(name){
+  if(!name){ toast('No deck selected.'); return; }
+  showScreen('stats');
+  document.getElementById('stats-deck-label').innerHTML='<span aria-hidden="true">📊</span> <span class="odl-name">'+escHtml(name)+'</span>';
+  document.getElementById('stats-body').innerHTML='<div class="empty-state">Loading…</div>';
+  const data=await getDeckData(name);
+  renderStatsInto(name, data.cards, data.srs, name);
+}
+async function openAllStats(){
+  showScreen('stats');
+  document.getElementById('stats-deck-label').innerHTML='<span aria-hidden="true">📊</span> <span class="odl-name">All decks</span>';
+  document.getElementById('stats-body').innerHTML='<div class="empty-state">Loading…</div>';
+  const data=await getAllData();
+  renderStatsInto('All decks', data.cards, data.srs, null);
+}
+function backFromStats(){ showScreen('decks'); }
 
 // ════════════════════════════════════════════════════════════════════════════
 // PWA — service worker only (offline caching). No install prompt.
