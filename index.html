@@ -280,6 +280,9 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .cbadge.medium { color: var(--hard);  border-color: var(--hard); }
 .cbadge.hard   { color: var(--again); border-color: var(--again); }
 .card-interval { font-size: 0.62rem; color: var(--text3); margin-top: 2px; }
+.card-links { display: none; flex-direction: column; gap: 4px; margin-top: 0.5rem; max-width: 100%; align-items: center; }
+.card-links a { font-size: 0.72rem; color: var(--easy); text-decoration: none; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-links a:hover { text-decoration: underline; }
 .card-ribbon { position:absolute; top:14px; right:14px; font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; padding:2px 7px; border-radius:99px; border:1px solid var(--border2); color:var(--text3); }
 .card-ribbon.ribbon-new { color:var(--easy);  border-color:var(--easy); }
 .card-ribbon.ribbon-due { color:var(--good);  border-color:var(--good); }
@@ -550,6 +553,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
           <span class="card-tag">Answer</span>
           <p class="card-text" id="card-a"></p>
           <div class="card-badges" id="badges-b"></div>
+          <div class="card-links" id="card-links" onclick="event.stopPropagation()"></div>
           <span class="card-interval" id="card-interval"></span>
         </div>
       </div>
@@ -657,6 +661,11 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
           <option value="hard">Hard</option>
         </select>
       </div>
+    </div>
+    <div class="modal-field">
+      <label class="field-label">Reference links <span style="opacity:.5">(optional, one per line)</span></label>
+      <textarea class="field-input" id="ed-links" placeholder="https://example.com/article&#10;Khan Academy | https://khanacademy.org/…" rows="2"></textarea>
+      <span style="font-size:0.65rem;color:var(--text3);margin-top:2px">Format: a URL on each line, or “Label | URL” to give it a name.</span>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger btn-sm" id="ed-delete-btn" onclick="confirmDeleteCard()" style="display:none">Delete card</button>
@@ -1038,6 +1047,7 @@ function parseJSON(text) {
     if(diff&&!valid.includes(diff)) diff=null;
     return {q:String(d.question).trim(), a:String(d.answer).trim(),
       category:d.category?String(d.category).trim():null, difficulty:diff,
+      links:normalizeLinksArray(d.links),
       key:cardKey(String(d.question).trim())};
   });
   if(!cards.length)throw new Error('No valid cards found. Each card needs "question" and "answer".');
@@ -1379,6 +1389,7 @@ function renderCard() {
   const badges=makeBadges(c);
   document.getElementById('badges-f').innerHTML=badges;
   document.getElementById('badges-b').innerHTML=badges;
+  renderCardLinks(c);
   document.getElementById('card-interval').textContent = studyAllMode
     ? fmtDue(key)
     : (srsData[key]?'Interval: '+fmtDays(srsData[key].interval):'First time seeing this card');
@@ -1389,6 +1400,37 @@ function renderCard() {
   updateProgress();
 }
 function makeBadges(c){let h='';if(c.category)h+=`<span class="cbadge">${escHtml(c.category)}</span>`;if(c.difficulty)h+=`<span class="cbadge ${c.difficulty}">${escHtml(c.difficulty)}</span>`;return h;}
+
+// Reference links: parse, format, normalize, and render (http/https only for safety).
+function normalizeUrl(u){ u=String(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u.replace(/^\/+/,''); return /^https?:\/\//i.test(u)?u:''; }
+function parseLinksInput(text){
+  const out=[];
+  (text||'').split(/\r?\n/).forEach(line=>{
+    line=line.trim(); if(!line) return;
+    let label='', raw=line; const bar=line.indexOf('|');
+    if(bar>=0){ label=line.slice(0,bar).trim(); raw=line.slice(bar+1).trim(); }
+    const url=normalizeUrl(raw); if(!url) return;
+    out.push(label?{url,label}:{url});
+  });
+  return out;
+}
+function linksToText(links){ return (links||[]).map(l=> l.label ? (l.label+' | '+l.url) : l.url).join('\n'); }
+function normalizeLinksArray(arr){
+  const out=[];
+  if(!Array.isArray(arr)) return out;
+  arr.forEach(it=>{
+    if(typeof it==='string'){ const u=normalizeUrl(it); if(u) out.push({url:u}); }
+    else if(it&&it.url){ const u=normalizeUrl(it.url); if(u) out.push(it.label?{url:u,label:String(it.label)}:{url:u}); }
+  });
+  return out;
+}
+function renderCardLinks(c){
+  const el=document.getElementById('card-links');
+  const links=(c.links||[]).filter(l=>l&&/^https?:\/\//i.test(l.url||''));
+  if(!links.length){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='flex';
+  el.innerHTML=links.map(l=>'<a href="'+escHtml(l.url)+'" target="_blank" rel="noopener noreferrer">🔗 '+escHtml(l.label||l.url)+'</a>').join('');
+}
 function updateProgress(){
   const total=queue.length,s=sessionStats,pct=n=>total?(n/total*100).toFixed(1)+'%':'0%';
   ['again','hard','good','easy'].forEach(r=>document.getElementById('ps-'+r).style.width=pct(s[r]));
@@ -1531,8 +1573,8 @@ function openCardEditor(key) {
   const isNew=key===null;
   document.getElementById('editor-title').textContent=isNew?'Add card':'Edit card';
   document.getElementById('ed-delete-btn').style.display=isNew?'none':'inline-flex';
-  if(!isNew){const c=allCards.find(x=>x.key===key);if(!c)return;document.getElementById('ed-question').value=c.q;document.getElementById('ed-answer').value=c.a;document.getElementById('ed-category').value=c.category||'';document.getElementById('ed-difficulty').value=c.difficulty||'';}
-  else{['ed-question','ed-answer','ed-category'].forEach(id=>document.getElementById(id).value='');document.getElementById('ed-difficulty').value='';}
+  if(!isNew){const c=allCards.find(x=>x.key===key);if(!c)return;document.getElementById('ed-question').value=c.q;document.getElementById('ed-answer').value=c.a;document.getElementById('ed-category').value=c.category||'';document.getElementById('ed-difficulty').value=c.difficulty||'';document.getElementById('ed-links').value=linksToText(c.links);}
+  else{['ed-question','ed-answer','ed-category','ed-links'].forEach(id=>document.getElementById(id).value='');document.getElementById('ed-difficulty').value='';}
   document.getElementById('editor-modal').classList.add('open');
   setTimeout(()=>document.getElementById('ed-question').focus(),100);
 }
@@ -1544,12 +1586,13 @@ function saveCard() {
   const a=document.getElementById('ed-answer').value.trim();
   const cat=document.getElementById('ed-category').value.trim()||null;
   const diff=document.getElementById('ed-difficulty').value||null;
+  const links=parseLinksInput(document.getElementById('ed-links').value);
   if(!q){toast('Question cannot be empty.');return;}
   if(!a){toast('Answer cannot be empty.');return;}
   if(editorCardKey===null){
     const nk=cardKey(q);
     if(allCards.find(c=>c.key===nk)){toast('A card with this question already exists.');return;}
-    allCards.push({q,a,category:cat,difficulty:diff,key:nk}); toast('Card added ✓');
+    allCards.push({q,a,category:cat,difficulty:diff,links,key:nk}); toast('Card added ✓');
   } else {
     const idx=allCards.findIndex(c=>c.key===editorCardKey); if(idx<0)return;
     const nk=cardKey(q);
@@ -1558,7 +1601,7 @@ function saveCard() {
       if(srsData[editorCardKey]){srsData[nk]=srsData[editorCardKey];delete srsData[editorCardKey];}
       const qi=queue.indexOf(editorCardKey);if(qi>=0)queue[qi]=nk;
     }
-    allCards[idx]={q,a,category:cat,difficulty:diff,key:nk}; toast('Card updated ✓');
+    allCards[idx]={q,a,category:cat,difficulty:diff,links,key:nk}; toast('Card updated ✓');
   }
   lsSaveAll(); scheduleSyncSave(); buildFilters(); renderCardList(); closeCardEditor();
 }
@@ -1577,7 +1620,7 @@ function doDeleteCard(){
 // EXPORT
 // ════════════════════════════════════════════════════════════════════════════
 function exportDeck() {
-  const data=allCards.map(c=>{const o={question:c.q,answer:c.a};if(c.category)o.category=c.category;if(c.difficulty)o.difficulty=c.difficulty;return o;});
+  const data=allCards.map(c=>{const o={question:c.q,answer:c.a};if(c.category)o.category=c.category;if(c.difficulty)o.difficulty=c.difficulty;if(c.links&&c.links.length)o.links=c.links;return o;});
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(deckName||'flashcards').replace(/\.json$/i,'')+'.json';a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);
