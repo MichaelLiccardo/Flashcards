@@ -274,6 +274,11 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
 .card-tag { font-size: 0.6rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text3); }
 .card-text { font-family: var(--serif); font-size: 1.3rem; line-height: 1.6; color: var(--text); font-style: italic; }
 .card-img { max-width: 100%; max-height: 38%; min-height: 0; flex-shrink: 1; object-fit: contain; border-radius: 8px; }
+.ed-optional-toggle { background: none; border: none; color: var(--text2); font-family: var(--sans); font-size: 0.78rem; cursor: pointer; padding: 4px 0; text-align: left; display: flex; align-items: center; gap: 7px; }
+.ed-optional-toggle:hover { color: var(--text); }
+.ed-optional-toggle #ed-optional-caret { transition: transform .15s; display: inline-block; font-size: 0.7rem; color: var(--text3); }
+.ed-optional { display: flex; flex-direction: column; gap: 0.9rem; }
+.ed-optional.collapsed { display: none; }
 .card-tap { font-size: 0.65rem; color: var(--text3); }
 .card-badges { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
 .cbadge { font-size: 0.58rem; padding: 2px 7px; border-radius: 99px; border: 1px solid var(--border2); color: var(--text3); }
@@ -567,6 +572,7 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
           <img class="card-img" id="card-a-img" alt="" hidden>
           <div class="card-badges" id="badges-b"></div>
           <div class="card-links" id="card-links" onclick="event.stopPropagation()"></div>
+          <span class="card-tap">click to flip back</span>
           <span class="card-interval" id="card-interval"></span>
         </div>
       </div>
@@ -661,37 +667,42 @@ textarea.field-input { min-height: 80px; line-height: 1.5; }
       <label class="field-label">Answer</label>
       <textarea class="field-input" id="ed-answer" placeholder="Enter the answer…" rows="3"></textarea>
     </div>
-    <div style="display:flex;gap:12px">
-      <div class="modal-field" style="flex:1">
-        <label class="field-label">Category <span style="opacity:.5">(optional)</span></label>
-        <input class="field-input" id="ed-category" placeholder="e.g. Biology">
+    <button type="button" class="ed-optional-toggle" id="ed-optional-toggle" onclick="toggleEditorOptional()">
+      <span id="ed-optional-caret">▸</span> Optional: category, difficulty, links, images
+    </button>
+    <div id="ed-optional" class="ed-optional collapsed">
+      <div style="display:flex;gap:12px">
+        <div class="modal-field" style="flex:1">
+          <label class="field-label">Category <span style="opacity:.5">(optional)</span></label>
+          <input class="field-input" id="ed-category" placeholder="e.g. Biology">
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label class="field-label">Difficulty <span style="opacity:.5">(optional)</span></label>
+          <select class="field-input" id="ed-difficulty">
+            <option value="">— none —</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
       </div>
-      <div class="modal-field" style="flex:1">
-        <label class="field-label">Difficulty <span style="opacity:.5">(optional)</span></label>
-        <select class="field-input" id="ed-difficulty">
-          <option value="">— none —</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
+      <div class="modal-field">
+        <label class="field-label">Reference links <span style="opacity:.5">(optional, one per line)</span></label>
+        <textarea class="field-input" id="ed-links" placeholder="https://example.com/article&#10;Khan Academy | https://khanacademy.org/…" rows="2"></textarea>
+        <span style="font-size:0.65rem;color:var(--text3);margin-top:2px">Format: a URL on each line, or “Label | URL” to give it a name.</span>
       </div>
+      <div style="display:flex;gap:12px">
+        <div class="modal-field" style="flex:1">
+          <label class="field-label">Question image URL <span style="opacity:.5">(optional)</span></label>
+          <input class="field-input" id="ed-qimg" placeholder="https://…/image.png">
+        </div>
+        <div class="modal-field" style="flex:1">
+          <label class="field-label">Answer image URL <span style="opacity:.5">(optional)</span></label>
+          <input class="field-input" id="ed-aimg" placeholder="https://…/image.png">
+        </div>
+      </div>
+      <span style="font-size:0.65rem;color:var(--text3);margin-top:-6px">Paste a link to an image hosted on the web. The image isn’t stored in your database — only the link.</span>
     </div>
-    <div class="modal-field">
-      <label class="field-label">Reference links <span style="opacity:.5">(optional, one per line)</span></label>
-      <textarea class="field-input" id="ed-links" placeholder="https://example.com/article&#10;Khan Academy | https://khanacademy.org/…" rows="2"></textarea>
-      <span style="font-size:0.65rem;color:var(--text3);margin-top:2px">Format: a URL on each line, or “Label | URL” to give it a name.</span>
-    </div>
-    <div style="display:flex;gap:12px">
-      <div class="modal-field" style="flex:1">
-        <label class="field-label">Question image URL <span style="opacity:.5">(optional)</span></label>
-        <input class="field-input" id="ed-qimg" placeholder="https://…/image.png">
-      </div>
-      <div class="modal-field" style="flex:1">
-        <label class="field-label">Answer image URL <span style="opacity:.5">(optional)</span></label>
-        <input class="field-input" id="ed-aimg" placeholder="https://…/image.png">
-      </div>
-    </div>
-    <span style="font-size:0.65rem;color:var(--text3);margin-top:-6px">Paste a link to an image hosted on the web. The image isn’t stored in your database — only the link.</span>
     <div class="modal-footer">
       <button class="btn btn-danger btn-sm" id="ed-delete-btn" onclick="confirmDeleteCard()" style="display:none">Delete card</button>
       <div class="modal-footer-right">
@@ -1602,8 +1613,9 @@ function updateProgress(){
 // ════════════════════════════════════════════════════════════════════════════
 // STUDY INTERACTIONS
 // ════════════════════════════════════════════════════════════════════════════
-function handleCardClick(){if(!isFlipped)revealCard();}
+function handleCardClick(){ isFlipped ? unrevealCard() : revealCard(); }
 function revealCard(){isFlipped=true;document.getElementById('card-inner').classList.add('flipped');document.getElementById('rating-area').classList.add('show');document.getElementById('nav-bar').classList.add('hide');}
+function unrevealCard(){isFlipped=false;document.getElementById('card-inner').classList.remove('flipped');} // flip back to the question (rating stays available)
 function rate(r){
   const key=queue[qIdx];
   const cd=srsData[key]||{interval:0,ease:DEFAULT_EASE,reps:0,due:0};
@@ -1729,6 +1741,15 @@ async function confirmDeckPick(){
   openCardEditor(null); // deckName is now set, so this opens the card editor directly
 }
 
+function setEditorOptional(open){
+  const sec=document.getElementById('ed-optional');
+  const caret=document.getElementById('ed-optional-caret');
+  if(!sec) return;
+  sec.classList.toggle('collapsed', !open);
+  if(caret) caret.style.transform = open ? 'rotate(90deg)' : 'rotate(0deg)';
+}
+function toggleEditorOptional(){ setEditorOptional(document.getElementById('ed-optional').classList.contains('collapsed')); }
+
 function openCardEditor(key) {
   // A new card needs a deck to live in — if none is open, choose/create one first.
   if(key===null && !deckName){ openDeckPick(); return; }
@@ -1736,8 +1757,11 @@ function openCardEditor(key) {
   const isNew=key===null;
   document.getElementById('editor-title').textContent=isNew?'Add card':'Edit card';
   document.getElementById('ed-delete-btn').style.display=isNew?'none':'inline-flex';
-  if(!isNew){const c=allCards.find(x=>x.key===key);if(!c)return;document.getElementById('ed-question').value=c.q;document.getElementById('ed-answer').value=c.a;document.getElementById('ed-category').value=c.category||'';document.getElementById('ed-difficulty').value=c.difficulty||'';document.getElementById('ed-links').value=linksToText(c.links);document.getElementById('ed-qimg').value=c.qImg||'';document.getElementById('ed-aimg').value=c.aImg||'';}
+  let hasOptional=false;
+  if(!isNew){const c=allCards.find(x=>x.key===key);if(!c)return;document.getElementById('ed-question').value=c.q;document.getElementById('ed-answer').value=c.a;document.getElementById('ed-category').value=c.category||'';document.getElementById('ed-difficulty').value=c.difficulty||'';document.getElementById('ed-links').value=linksToText(c.links);document.getElementById('ed-qimg').value=c.qImg||'';document.getElementById('ed-aimg').value=c.aImg||'';
+    hasOptional=!!(c.category||c.difficulty||(c.links&&c.links.length)||c.qImg||c.aImg);}
   else{['ed-question','ed-answer','ed-category','ed-links','ed-qimg','ed-aimg'].forEach(id=>document.getElementById(id).value='');document.getElementById('ed-difficulty').value='';}
+  setEditorOptional(hasOptional); // collapsed by default; auto-open when editing a card that already uses optional fields
   document.getElementById('editor-modal').classList.add('open');
   setTimeout(()=>document.getElementById('ed-question').focus(),100);
 }
@@ -1849,8 +1873,8 @@ document.addEventListener('keydown',e=>{
   if(['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;
   if(document.getElementById('screen-deck').style.display==='none')return;
   if(!queue.length||qIdx>=queue.length)return;
-  if(!isFlipped){if(e.key===' '||e.key==='Enter'){e.preventDefault();revealCard();}return;}
-  if(e.key==='1')rate('again'); if(e.key==='2')rate('hard'); if(e.key==='3')rate('good'); if(e.key==='4')rate('easy');
+  if(e.key===' '||e.key==='Enter'){e.preventDefault();handleCardClick();return;}
+  if(isFlipped){ if(e.key==='1')rate('again'); if(e.key==='2')rate('hard'); if(e.key==='3')rate('good'); if(e.key==='4')rate('easy'); }
   if(e.key==='e'&&!aggregateMode){const key=queue[qIdx];if(key)openCardEditor(key);}
 });
 
